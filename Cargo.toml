@@ -1,0 +1,9 @@
+[package]
+name = "rsmobiledevice"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+plist_plus = "0.2.6"
+rusty_libimobiledevice = "0.2.2"
+thiserror = "2.0.3"
