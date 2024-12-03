@@ -2,6 +2,11 @@
 name = "rsmobiledevice"
 version = "0.1.0"
 edition = "2021"
+authors = ["Abdullah Al-Banna"]
+description = "A high level and easy to use wrapper for rusty_libimobiledevice"
+homepage = "https://github.com/Abdullah-Albanna/rsmobiledevice"
+repository = "https://github.com/Abdullah-Albanna/rsmobiledevice"
+keywords = ["libimobiledevice", "ios", "lockdown", "ipa", "ipcc", "mobiledevice"]
 
 [dependencies]
 plist_plus = "0.2.6"

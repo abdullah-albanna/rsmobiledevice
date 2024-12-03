@@ -1,42 +1,19 @@
 use std::collections::HashMap;
-use std::fmt::Display;
+use std::fmt::{write, Display};
+use std::hash::Hash;
 use std::marker::PhantomData;
 
 use crate::device_domains::DeviceDomains;
+use crate::device_keys::DeviceKeys;
+use crate::devices::{DeviceGroup, Devices, SingleDevice};
 use crate::errors::IDeviceErrors;
 use plist_plus::Plist;
+
 use rusty_libimobiledevice;
 
-use rusty_libimobiledevice::error::LockdowndError;
+use rusty_libimobiledevice::error::{IdeviceError, LockdowndError};
 use rusty_libimobiledevice::idevice::{self, Device};
 use rusty_libimobiledevice::services::lockdownd::LockdowndClient;
-
-pub struct SingleDevice();
-pub struct DeviceGroup();
-
-#[derive(Debug, Clone)]
-pub enum Devices {
-    Single(idevice::Device),
-    Multiple(Vec<idevice::Device>),
-}
-
-impl Devices {
-    pub fn get_device(&self) -> Option<Device> {
-        if let Devices::Single(device) = self {
-            Some(device.clone())
-        } else {
-            None
-        }
-    }
-
-    pub fn get_devices(&self) -> Option<Vec<Device>> {
-        if let Devices::Multiple(devices) = self {
-            Some(devices.clone())
-        } else {
-            None
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct IDeviceInfo<T = DeviceGroup> {
@@ -105,14 +82,13 @@ impl IDeviceInfo<SingleDevice> {
         Ok(output)
     }
 
-    pub fn get_dict(
+    pub fn get_values(
         &self,
-        key: impl Into<String> + Copy,
         domain: DeviceDomains,
     ) -> Result<HashMap<String, String>, IDeviceErrors> {
         let mut dict: HashMap<String, String> = HashMap::new();
 
-        let output = self.get_plist(key, domain)?;
+        let output = self.get_plist("", domain)?;
 
         for line in output {
             dict.insert(
@@ -127,8 +103,32 @@ impl IDeviceInfo<SingleDevice> {
         Ok(dict)
     }
 
-    pub fn get_dict_all(&self) -> Result<HashMap<String, String>, IDeviceErrors> {
-        self.get_dict("", DeviceDomains::All)
+    pub fn get_value(
+        &self,
+        key: DeviceKeys,
+        domain: DeviceDomains,
+    ) -> Result<String, IDeviceErrors> {
+        let values = self.get_values(domain)?;
+
+        if let Some(key) = values.get(&key.to_string()) {
+            Ok(key.to_owned())
+        } else {
+            Err(IDeviceErrors::KeyNotFound)
+        }
+    }
+
+    pub fn get_all_values(&self) -> Result<HashMap<String, String>, IDeviceErrors> {
+        self.get_values(DeviceDomains::All)
+    }
+
+    pub fn get_product_type(&self) -> String {
+        self.get_value(DeviceKeys::ProductType, DeviceDomains::All)
+            .expect("Couldn't get the product type, this is a bug")
+    }
+
+    pub fn get_product_version(&self) -> String {
+        self.get_value(DeviceKeys::ProductType, DeviceDomains::All)
+            .expect("Couldn't get the product version, this is a bug")
     }
 }
 impl IDeviceInfo<DeviceGroup> {
@@ -181,14 +181,13 @@ impl IDeviceInfo<DeviceGroup> {
         }
     }
 
-    pub fn get_dict(
+    pub fn get_values(
         &self,
-        key: impl Into<String> + Copy,
         domain: DeviceDomains,
     ) -> Result<HashMap<u32, HashMap<String, String>>, IDeviceErrors> {
         let mut dicts: HashMap<u32, HashMap<String, String>> = HashMap::new();
 
-        for (i, plist) in self.get_plist(key, domain)?.iter().enumerate() {
+        for (i, plist) in self.get_plist("", domain)?.iter().enumerate() {
             let mut device_dict = HashMap::new();
             for line in plist.clone() {
                 device_dict.insert(
@@ -207,8 +206,37 @@ impl IDeviceInfo<DeviceGroup> {
         Ok(dicts)
     }
 
-    pub fn get_dict_all(&self) -> Result<HashMap<u32, HashMap<String, String>>, IDeviceErrors> {
-        self.get_dict("", DeviceDomains::All)
+    pub fn get_value(
+        &self,
+        key: DeviceKeys,
+        domain: DeviceDomains,
+    ) -> Result<Vec<String>, IDeviceErrors> {
+        let values = self.get_values(domain)?;
+
+        let mut selected_key_values = Vec::new();
+
+        for value in values.values() {
+            if let Some(key) = value.get(&key.to_string()) {
+                selected_key_values.push(key.to_owned())
+            } else {
+                return Err(IDeviceErrors::KeyNotFound);
+            }
+        }
+        Ok(selected_key_values)
+    }
+
+    pub fn get_all_values(&self) -> Result<HashMap<u32, HashMap<String, String>>, IDeviceErrors> {
+        self.get_values(DeviceDomains::All)
+    }
+
+    pub fn get_product_type(&self) -> Vec<String> {
+        self.get_value(DeviceKeys::ProductType, DeviceDomains::All)
+            .expect("Couldn't get the product type, this is a bug")
+    }
+
+    pub fn get_product_version(&self) -> Vec<String> {
+        self.get_value(DeviceKeys::ProductType, DeviceDomains::All)
+            .expect("Couldn't get the product version, this is a bug")
     }
 }
 
@@ -226,7 +254,36 @@ impl IDeviceInfo {
 impl TryFrom<String> for IDeviceInfo {
     type Error = IDeviceErrors;
 
-    /// from udid
+    /// Attempts to create an `IDeviceInfo` instance from a given UDID string.
+    ///
+    /// This implementation converts a UDID (Unique Device Identifier) represented as a `String`
+    /// into an `IDeviceInfo` instance by retrieving the corresponding device using the `idevice` library.
+    ///
+    /// # Parameters
+    ///
+    /// - `value`: A `String` representing the UDID of the device.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(IDeviceInfo)` if the device is successfully found and instantiated.
+    /// - `Err(IDeviceErrors)` if there is an error retrieving the device (e.g., device not found or connection error).
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the device corresponding to the provided UDID cannot be retrieved.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use crate::IDeviceInfo;
+    /// use std::convert::TryFrom;
+    ///
+    /// let udid = "example-udid-string".to_string();
+    /// match IDeviceInfo::try_from(udid) {
+    ///     Ok(device_info) => println!("Successfully created IDeviceInfo: {:?}", device_info),
+    ///     Err(err) => println!("Error: {:?}", err),
+    /// }
+    /// ```
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let device = idevice::get_device(value)?;
         Ok(Self {
