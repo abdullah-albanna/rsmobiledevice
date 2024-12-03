@@ -6,7 +6,7 @@ use crate::{
     errors::DeviceClientError,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct DeviceClient<T = DeviceGroup> {
     devices: Devices,
     _p: PhantomData<T>,
@@ -24,14 +24,13 @@ impl DeviceClient {
 }
 
 impl DeviceClient<SingleDevice> {
-    pub fn get_device(&self) -> Option<idevice::Device> {
+    pub fn get_device(&self) -> Option<&idevice::Device> {
         self.devices.get_device()
     }
 
     pub fn get_afc_client(&self) -> Result<AfcClient, DeviceClientError> {
         if let Some(device) = self.get_device() {
-            let afc_client =
-                AfcClient::start_service(&device, "rsmobiledevice-afc_client").unwrap();
+            let afc_client = AfcClient::start_service(device, "rsmobiledevice-afc_client").unwrap();
 
             Ok(afc_client)
         } else {
@@ -52,7 +51,7 @@ impl DeviceClient<DeviceGroup> {
         }
     }
 
-    pub fn get_devices(&self) -> Option<Vec<idevice::Device>> {
+    pub fn get_devices(&self) -> Option<&Vec<idevice::Device>> {
         self.devices.get_devices()
     }
 }

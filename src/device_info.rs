@@ -14,7 +14,7 @@ use rusty_libimobiledevice;
 use rusty_libimobiledevice::error::LockdowndError;
 use rusty_libimobiledevice::services::lockdownd::LockdowndClient;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct DeviceInfo<T> {
     devices: DeviceClient<T>,
     _p: PhantomData<T>,

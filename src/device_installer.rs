@@ -17,14 +17,16 @@ use crate::{device::DeviceClient, devices::SingleDevice, errors::DeviceInstaller
 
 const PKG_PATH: &str = "PublicStaging";
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct DeviceInstaller<T> {
     devices: DeviceClient<T>,
     _p: PhantomData<T>,
 }
 
 enum PackageType {
+    #[allow(clippy::upper_case_acronyms)]
     IPCC,
+    #[allow(clippy::upper_case_acronyms)]
     IPA,
     Unknown,
 }
