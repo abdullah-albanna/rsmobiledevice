@@ -1,0 +1,99 @@
+use rusty_libimobiledevice::{idevice, services::afc::AfcClient};
+use std::marker::PhantomData;
+
+use crate::{
+    devices::{DeviceGroup, Devices, SingleDevice},
+    errors::DeviceClientError,
+};
+
+#[derive(Debug, Clone)]
+pub struct DeviceClient<T = DeviceGroup> {
+    devices: Devices,
+    _p: PhantomData<T>,
+}
+
+impl DeviceClient {
+    pub fn new() -> Result<DeviceClient<DeviceGroup>, DeviceClientError> {
+        let devices = idevice::get_devices()?;
+
+        Ok(DeviceClient {
+            devices: Devices::Multiple(devices),
+            _p: PhantomData::<DeviceGroup>,
+        })
+    }
+}
+
+impl DeviceClient<SingleDevice> {
+    pub fn get_device(&self) -> Option<idevice::Device> {
+        self.devices.get_device()
+    }
+
+    pub fn get_afc_client(&self) -> Result<AfcClient, DeviceClientError> {
+        if let Some(device) = self.get_device() {
+            let afc_client =
+                AfcClient::start_service(&device, "rsmobiledevice-afc_client").unwrap();
+
+            Ok(afc_client)
+        } else {
+            Err(DeviceClientError::DeviceNotFound)
+        }
+    }
+}
+
+impl DeviceClient<DeviceGroup> {
+    pub fn get_first_device(self) -> Option<DeviceClient<SingleDevice>> {
+        if let Devices::Multiple(device) = self.devices {
+            Some(DeviceClient {
+                devices: Devices::Single(device.first().unwrap().clone()),
+                _p: PhantomData::<SingleDevice>,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn get_devices(&self) -> Option<Vec<idevice::Device>> {
+        self.devices.get_devices()
+    }
+}
+impl TryFrom<String> for DeviceClient {
+    type Error = DeviceClientError;
+
+    /// Attempts to create an `DeviceInfo` instance from a given UDID string.
+    ///
+    /// This implementation converts a UDID (Unique Device Identifier) represented as a `String`
+    /// into an `DeviceInfo` instance by retrieving the corresponding device using the `idevice` library.
+    ///
+    /// # Parameters
+    ///
+    /// - `value`: A `String` representing the UDID of the device.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(DeviceInfo)` if the device is successfully found and instantiated.
+    /// - `Err(IDeviceErrors)` if there is an error retrieving the device (e.g., device not found or connection error).
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the device corresponding to the provided UDID cannot be retrieved.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use crate::DeviceInfo;
+    /// use std::convert::TryFrom;
+    ///
+    /// let udid = "example-udid-string".to_string();
+    /// match DeviceInfo::try_from(udid) {
+    ///     Ok(device_info) => println!("Successfully created DeviceInfo: {:?}", device_info),
+    ///     Err(err) => println!("Error: {:?}", err),
+    /// }
+    /// ```
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let device = idevice::get_device(value)?;
+        Ok(Self {
+            devices: Devices::Single(device),
+            _p: PhantomData,
+        })
+    }
+}

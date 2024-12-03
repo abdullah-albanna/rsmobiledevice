@@ -1,6 +1,8 @@
 use rusty_libimobiledevice::idevice::Device;
 
+#[derive(Clone)]
 pub struct SingleDevice();
+#[derive(Debug, Clone)]
 pub struct DeviceGroup();
 
 #[derive(Debug, Clone)]
