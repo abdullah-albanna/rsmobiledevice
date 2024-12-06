@@ -159,7 +159,7 @@ impl DeviceInstaller<SingleDevice> {
             PackageType::IPCC => {
                 self.check_or_create_path(
                     afc_client,
-                    &format!("/{}/{}", IPCC_REMOTE_FOLDER, PKG_PATH),
+                    &format!("/{}/{}", PKG_PATH, IPCC_REMOTE_FOLDER),
                 )?;
                 self.upload_ipcc_files(afc_client, package)?;
             }
