@@ -1,12 +1,14 @@
 use std::{
     collections::HashMap,
+    ffi::OsStr,
     fmt::Display,
     fs::{self, File},
-    io::Read,
+    io::{Read, Seek, SeekFrom},
     marker::PhantomData,
     path::Path,
 };
 
+use plist_plus::Plist;
 use rusty_libimobiledevice::services::{
     afc::{AfcClient, AfcFileMode},
     instproxy::InstProxyClient,
@@ -16,6 +18,8 @@ use zip::ZipArchive;
 use crate::{device::DeviceClient, devices::SingleDevice, errors::DeviceInstallerError};
 
 const PKG_PATH: &str = "PublicStaging";
+const IPCC_REMOTE_FOLDER: &str = "rsmobiledevice.ipcc";
+const IPA_REMOTE_FILE: &str = "rsmobiledevice.ipa";
 
 #[derive(Debug)]
 pub struct DeviceInstaller<T> {
@@ -42,12 +46,15 @@ impl Display for PackageType {
 }
 
 impl DeviceInstaller<SingleDevice> {
-    pub fn install_from_path(
+    pub fn install_from_path<S>(
         &self,
-        package_path: &Path,
+        package_path: &S,
         options: Option<HashMap<&str, &str>>,
-    ) -> Result<(), DeviceInstallerError> {
-        let file = fs::File::open(package_path)?;
+    ) -> Result<(), DeviceInstallerError>
+    where
+        S: AsRef<OsStr> + ?Sized,
+    {
+        let file = fs::File::open(Path::new(package_path.as_ref()))?;
 
         self._install_package(&file, options)
     }
@@ -91,15 +98,18 @@ impl DeviceInstaller<SingleDevice> {
             PackageType::IPCC => {
                 package_options.dict_set_item("PackageType", "CarrierBundle".into())?;
                 installation_client.install(
-                    format!("/{}/rsmobiledevice.ipcc", PKG_PATH),
+                    format!("/{}/{}", PKG_PATH, IPA_REMOTE_FILE),
                     Some(package_options),
                 )?;
             }
 
             PackageType::IPA => {
-                package_options.dict_set_item("PackageType", "Developer".into())?;
+                let bundle_id = self.get_bundle_id(file)?;
+
+                package_options.dict_set_item("CFBundleIdentifier", bundle_id.into())?;
+
                 installation_client.install(
-                    format!("/{}/rsmobiledevice.ipa", PKG_PATH),
+                    format!("/{}/{}", PKG_PATH, IPA_REMOTE_FILE),
                     Some(package_options),
                 )?;
             }
@@ -149,9 +159,8 @@ impl DeviceInstaller<SingleDevice> {
             PackageType::IPCC => {
                 self.check_or_create_path(
                     afc_client,
-                    &format!("/{}/rsmobiledevice.ipcc", PKG_PATH),
+                    &format!("/{}/{}", IPCC_REMOTE_FOLDER, PKG_PATH),
                 )?;
-
                 self.upload_ipcc_files(afc_client, package)?;
             }
             PackageType::IPA => self.upload_ipa_package(afc_client, package)?,
@@ -167,15 +176,19 @@ impl DeviceInstaller<SingleDevice> {
         mut ipa_file: &File,
     ) -> Result<(), DeviceInstallerError> {
         let remote_file_handler = afc_client.file_open(
-            format!("/{}/rsmobiledevice.ipa", PKG_PATH),
+            format!("/{}/{}", PKG_PATH, IPA_REMOTE_FILE),
             AfcFileMode::WriteOnly,
         )?;
+        // reset the cursor to the beginning for proper reading
+        ipa_file.seek(SeekFrom::Start(0))?;
 
         let mut file_bytes = Vec::new();
 
         ipa_file.read_to_end(&mut file_bytes)?;
 
         afc_client.file_write(remote_file_handler, file_bytes)?;
+        afc_client.file_close(remote_file_handler)?;
+
         Ok(())
     }
 
@@ -188,26 +201,25 @@ impl DeviceInstaller<SingleDevice> {
 
         for i in 0..archive.len() {
             let mut inside_file = archive.by_index(i)?;
+            let current_file_path = format!(
+                "/{}/{}/{}",
+                PKG_PATH,
+                IPCC_REMOTE_FOLDER,
+                inside_file
+                    .enclosed_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+            );
 
             if inside_file.is_dir() {
-                afc_client.make_directory(
-                    inside_file
-                        .enclosed_name()
-                        .unwrap_or_default()
-                        .to_string_lossy(),
-                )?;
+                afc_client.make_directory(current_file_path)?;
             } else {
                 let mut inside_file_bytes = Vec::new();
 
                 inside_file.read_to_end(&mut inside_file_bytes)?;
 
-                let remote_file_handler = afc_client.file_open(
-                    inside_file
-                        .enclosed_name()
-                        .unwrap_or_default()
-                        .to_string_lossy(),
-                    AfcFileMode::WriteOnly,
-                )?;
+                let remote_file_handler =
+                    afc_client.file_open(current_file_path, AfcFileMode::WriteOnly)?;
 
                 afc_client.file_write(remote_file_handler, inside_file_bytes)?;
             }
@@ -215,38 +227,40 @@ impl DeviceInstaller<SingleDevice> {
 
         Ok(())
     }
-    //fn get_bundle_id(&self, &mut zip_file: &ZipArchive<&File>) -> Option<String> {
-    //    let info_re = regex::Regex::new("Payload/[^/]*/Info.plist")
-    //        .expect("Couldn't make a new regex, this is a bug");
+    fn get_bundle_id(&self, file: &File) -> Result<String, DeviceInstallerError> {
+        let mut zip_file = ZipArchive::new(file).unwrap();
 
-    //    let mut bundle_id = String::new();
-    //    for i in 0..zip_file.len() {
-    //        if let Ok(mut file) = zip_file.by_index(i) {
-    //            if let Some(output) = file.enclosed_name() {
-    //                if info_re.is_match(output.to_str().unwrap_or_default()) {
-    //                    let mut buffer = Vec::new();
-    //                    if io::copy(&mut file, &mut buffer).is_err() {
-    //                        return None;
-    //                    }
-    //                    if let Ok(plist) = Plist::from_bin(buffer) {
-    //                        if let Ok(id) = plist
-    //                            .dict_get_item("CFBundleIdentifier")
-    //                            .and_then(|id| id.get_string_val())
-    //                        {
-    //                            bundle_id = id;
-    //                        } else {
-    //                            return None;
-    //                        }
-    //                    } else {
-    //                        return None;
-    //                    }
-    //                }
-    //            }
-    //        }
-    //    }
+        let mut bundle_id = String::new();
 
-    //    Some(bundle_id)
-    //}
+        for i in 0..zip_file.len() {
+            let mut file = zip_file.by_index(i)?;
+            let inner_file_path = file.enclosed_name();
+
+            if inner_file_path.is_none() {
+                continue;
+            }
+
+            let inner_file_path = inner_file_path.unwrap();
+
+            for path in inner_file_path.iter() {
+                if path.to_str() == Some("Info.plist")
+                    && inner_file_path.to_str().unwrap_or_default().len() == 3
+                {
+                    let mut plist_content = String::new();
+                    file.read_to_string(&mut plist_content)?;
+
+                    let plist = Plist::from_xml(plist_content)?;
+                    if let Ok(bid) = plist
+                        .dict_get_item("CFBundleIdentifier")
+                        .and_then(|p| p.get_string_val())
+                    {
+                        bundle_id = bid;
+                    }
+                }
+            }
+        }
+        Ok(bundle_id)
+    }
 
     fn check_or_create_path(
         &self,
