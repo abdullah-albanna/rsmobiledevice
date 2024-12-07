@@ -1,4 +1,5 @@
 use crate::{device::DeviceClient, devices::SingleDevice};
+use regex::Regex;
 use rusty_libimobiledevice::service::ServiceClient;
 use std::fmt;
 use std::sync::{mpsc, Arc, Mutex};
@@ -10,6 +11,45 @@ use std::time::Duration;
 enum LoggerCommand {
     StartLogging,
     StopLogging,
+}
+
+/// Struct to store parsed log data
+#[derive(Debug, Default)]
+struct LogsData<'a> {
+    date: &'a str,
+    device: &'a str,
+    process: &'a str,
+    pid: Option<&'a str>,
+    severity: Option<&'a str>,
+    message: &'a str,
+}
+
+/// Function to process a single log line
+fn process_log_line<'a>(line: &'a str, log_regex: &Regex) -> Option<LogsData<'a>> {
+    log_regex.captures(line).map(|captures| LogsData {
+        date: captures.name("date").unwrap().as_str(),
+        device: captures.name("device").unwrap().as_str(),
+        process: captures.name("process").unwrap().as_str(),
+        pid: captures.name("pid").map(|m| m.as_str()), // Optional
+        severity: captures.name("severity").map(|m| m.as_str()), // Optional
+        message: captures.name("message").unwrap().as_str(),
+    })
+}
+
+/// Function to process and display log data from a byte slice
+fn process_logs(data: &[u8]) {
+    let log_regex = Regex::new(r"^(?P<date>\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})\s+(?P<device>\S+)\s+(?P<process>[^\[\(<]+(?:\([^\)]+\))?)(?:\[(?P<pid>\d+)\])?\s*(?:<(?P<severity>\w+)>:\s*)?(?P<message>.+)$").unwrap();
+
+    let logs_raw_string = String::from_utf8_lossy(data);
+
+    for line in logs_raw_string.split_terminator('\n') {
+        let line = line.trim_matches('\0'); // Remove null characters
+        if let Some(logs_data) = process_log_line(line, &log_regex) {
+            println!("{:#?}", logs_data);
+        } else {
+            eprintln!("Unparsed log line: {}", line);
+        }
+    }
 }
 
 /// A struct representing the logging service for a specific device
@@ -67,10 +107,7 @@ impl DeviceSysLog<SingleDevice> {
                 match current_status {
                     LoggerCommand::StartLogging => match service.receive(1024) {
                         Ok(data) => {
-                            let log_data = String::from_utf8_lossy(&data);
-                            for line in log_data.split_terminator('\n') {
-                                println!("{}", line.replace('\0', ""));
-                            }
+                            process_logs(&data);
                         }
                         Err(err) => {
                             eprintln!("Failed to receive data: {}", err);
