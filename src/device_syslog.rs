@@ -24,6 +24,17 @@ struct LogsData<'a> {
     message: &'a str,
 }
 
+fn print_parsed_log(log: &LogsData) {
+    println!(
+        "[\x1b[34m{}\x1b[0m] \x1b[32m{}\x1b[0m \x1b[36m{}\x1b[0m [{}] <\x1b[31m{}\x1b[0m>: \x1b[37m{}\x1b[0m",
+        log.date,
+        log.device,
+        log.process,
+        log.pid.unwrap_or("None"),
+        log.severity.unwrap_or("None"),
+        log.message
+    );
+}
 /// Function to process a single log line
 fn process_log_line<'a>(line: &'a str, log_regex: &Regex) -> Option<LogsData<'a>> {
     log_regex.captures(line).map(|captures| LogsData {
@@ -37,19 +48,10 @@ fn process_log_line<'a>(line: &'a str, log_regex: &Regex) -> Option<LogsData<'a>
 }
 
 /// Function to process and display log data from a byte slice
-fn process_logs(data: &[u8]) {
+fn process_logs(line: &str) -> LogsData<'_> {
     let log_regex = Regex::new(r"^(?P<date>\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})\s+(?P<device>\S+)\s+(?P<process>[^\[\(<]+(?:\([^\)]+\))?)(?:\[(?P<pid>\d+)\])?\s*(?:<(?P<severity>\w+)>:\s*)?(?P<message>.+)$").unwrap();
 
-    let logs_raw_string = String::from_utf8_lossy(data);
-
-    for line in logs_raw_string.split_terminator('\n') {
-        let line = line.trim_matches('\0'); // Remove null characters
-        if let Some(logs_data) = process_log_line(line, &log_regex) {
-            println!("{:#?}", logs_data);
-        } else {
-            eprintln!("Unparsed log line: {}", line);
-        }
-    }
+    process_log_line(line, &log_regex).unwrap_or_default()
 }
 
 /// A struct representing the logging service for a specific device
@@ -74,7 +76,10 @@ impl<T> DeviceSysLog<T> {
 
 impl DeviceSysLog<SingleDevice> {
     /// Starts the logger service on a new thread
-    fn _start_service(&self) {
+    fn _start_service<F>(&self, callback: F)
+    where
+        F: Fn(LogsData) + 'static + Sync + Send,
+    {
         let devices_clone = Arc::clone(&self.devices);
         let receiver_clone = Arc::clone(&self.receiver);
 
@@ -107,7 +112,12 @@ impl DeviceSysLog<SingleDevice> {
                 match current_status {
                     LoggerCommand::StartLogging => match service.receive(1024) {
                         Ok(data) => {
-                            process_logs(&data);
+                            let logs_raw_string = String::from_utf8_lossy(&data);
+
+                            for line in logs_raw_string.split_terminator('\n') {
+                                let line = line.trim_matches('\0'); // Remove null characters
+                                callback(process_logs(line));
+                            }
                         }
                         Err(err) => {
                             eprintln!("Failed to receive data: {}", err);
@@ -121,9 +131,9 @@ impl DeviceSysLog<SingleDevice> {
     }
 
     /// Request to start logging
-    pub fn start_logging(&self) {
+    pub fn log_to_stdout(&self) {
         self.sender.send(LoggerCommand::StartLogging).unwrap();
-        self._start_service();
+        self._start_service(|logs| print_parsed_log(&logs));
     }
 
     /// Request to stop logging
