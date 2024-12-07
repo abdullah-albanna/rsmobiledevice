@@ -1,4 +1,7 @@
-use rusty_libimobiledevice::{idevice, services::afc::AfcClient};
+use rusty_libimobiledevice::{
+    idevice,
+    services::{afc::AfcClient, lockdownd::LockdowndClient},
+};
 use std::marker::PhantomData;
 
 use crate::{
@@ -6,7 +9,7 @@ use crate::{
     errors::DeviceClientError,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DeviceClient<T = DeviceGroup> {
     devices: Devices,
     _p: PhantomData<T>,
@@ -36,6 +39,13 @@ impl DeviceClient<SingleDevice> {
         } else {
             Err(DeviceClientError::DeviceNotFound)
         }
+    }
+
+    pub fn get_lockdown_client(&self) -> Result<LockdowndClient, DeviceClientError> {
+        let device = self.get_device().expect("couldn't get the deviec");
+
+        let lockdown = LockdowndClient::new(device, "deviceclient-lockdown-client")?;
+        Ok(lockdown)
     }
 }
 
