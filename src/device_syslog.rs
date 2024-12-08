@@ -99,9 +99,9 @@ pub enum LoggerCommand {
 // Enum for Log Filters
 #[derive(Debug, Clone)]
 pub enum LogFilter {
-    Match(String),
-    Trigger(String),
-    Untrigger(String),
+    Match(Regex),
+    Trigger(Regex),
+    Untrigger(Regex),
     Process(HashSet<String>),
     Exclude(HashSet<String>),
     Quiet,
@@ -121,19 +121,17 @@ impl LogFilter {
     fn apply(&self, logs_data: &LogsData) -> LogAction {
         match self {
             LogFilter::Match(pattern) => {
-                let message = logs_data.message;
-                if !message.contains(pattern) {
+                if pattern.is_match(logs_data.message) {
                     return LogAction::Log;
                 }
                 LogAction::Continue
             }
             LogFilter::Trigger(_) => todo!(),
             LogFilter::Untrigger(pattern) => {
-                let message = logs_data.message;
-                if !message.contains(pattern) {
-                    return LogAction::Log;
+                if pattern.is_match(logs_data.message) {
+                    return LogAction::Break;
                 }
-                LogAction::Break
+                LogAction::Log
             }
             LogFilter::Process(processes) => {
                 let process = logs_data.process;
