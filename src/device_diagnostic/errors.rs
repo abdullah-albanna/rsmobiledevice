@@ -1,3 +1,4 @@
+use plist_plus::error::PlistError;
 use rusty_libimobiledevice::error::{DiagnosticsRelayError, LockdowndError};
 use thiserror::Error;
 
@@ -22,4 +23,7 @@ pub enum DeviceDiagnosticError {
 
     #[error("Device Client Error: {0}")]
     DeviceClientError(#[from] DeviceClientError),
+
+    #[error("Plist error: {0}")]
+    PlistError(#[from] PlistError),
 }

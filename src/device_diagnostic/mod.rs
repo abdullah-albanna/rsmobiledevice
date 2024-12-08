@@ -8,6 +8,10 @@ use rusty_libimobiledevice::services::diagnostics_relay::DiagnosticsRelay;
 
 const DIAGNOSTICS_RELAY_SERVICE: &str = "com.apple.mobile.diagnostics_relay";
 
+#[allow(dead_code)]
+// we should use it as a fallback
+const DIAGNOSTICS_RELAY_SERVICE_OLD: &str = "com.apple.iosdiagnostics.relay";
+
 #[derive(Debug)]
 pub struct DeviceDiagnostic<T> {
     device: DeviceClient<T>,
@@ -89,6 +93,26 @@ impl DeviceDiagnostic<SingleDevice> {
         Ok(relay.query_ioregistry_plane(plane.to_string())?)
     }
 
+    pub fn query_ioregentry_key(
+        &self,
+        key: impl Into<String>,
+    ) -> Result<Plist, DeviceDiagnosticError> {
+        let relay = self._get_diagnostic_relay()?;
+        Ok(relay.query_ioregistry_entry(key, "")?)
+    }
+
+    pub fn query_mobilegestalt(
+        &self,
+        keys: Vec<impl Into<String>>,
+    ) -> Result<Plist, DeviceDiagnosticError> {
+        let relay = self._get_diagnostic_relay()?;
+        let mut plist = Plist::new_array();
+
+        for (i, key) in keys.into_iter().enumerate() {
+            plist.array_insert_item(Plist::new_string(&(key.into())), i as u32)?;
+        }
+        Ok(relay.query_mobilegestalt(plist)?)
+    }
     pub fn sleep(&self) -> Result<(), DeviceDiagnosticError> {
         self._device_power_action(DevicePowerAction::Sleep)
     }
