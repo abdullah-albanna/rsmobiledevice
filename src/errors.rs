@@ -1,4 +1,4 @@
-use std::sync::mpsc::SendError;
+use crossbeam_channel::SendError;
 
 use plist_plus::error::PlistError;
 use rusty_libimobiledevice::error::{AfcError, IdeviceError, InstProxyError, LockdowndError};

@@ -1,5 +1,6 @@
 use crate::errors::DeviceSysLogError;
 use crate::{device::DeviceClient, devices::SingleDevice};
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use regex::Regex;
 use rusty_libimobiledevice::service::ServiceClient;
 use std::collections::HashSet;
@@ -7,7 +8,7 @@ use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
@@ -95,6 +96,8 @@ pub enum LoggerCommand {
     StartLogging,
     StopLogging,
 }
+
+unsafe impl Sync for LoggerCommand {}
 
 // Enum for Log Filters
 #[derive(Debug, Clone)]
@@ -233,19 +236,19 @@ fn process_logs(line: &str) -> LogsData<'_> {
 #[derive(Debug)]
 pub struct DeviceSysLog<T> {
     devices: Arc<DeviceClient<T>>,
-    sender: mpsc::Sender<LoggerCommand>,
-    receiver: Arc<Mutex<mpsc::Receiver<LoggerCommand>>>,
+    sender: Sender<LoggerCommand>,
+    receiver: Arc<Receiver<LoggerCommand>>,
     filter: LogFilter,
     _phantom: std::marker::PhantomData<T>,
 }
 
 impl<T> DeviceSysLog<T> {
     pub fn new(devices: DeviceClient<T>) -> DeviceSysLog<T> {
-        let (tx, rx) = mpsc::channel();
+        let (tx, rx) = unbounded();
         DeviceSysLog {
             devices: Arc::new(devices),
             sender: tx,
-            receiver: Arc::new(Mutex::new(rx)),
+            receiver: Arc::new(rx),
             filter: LogFilter::Nothing,
             _phantom: std::marker::PhantomData::<T>,
         }
@@ -276,13 +279,7 @@ impl DeviceSysLog<SingleDevice> {
             loop {
                 // Listen for commands to start/stop logging
 
-                let reciver = receiver_clone.lock();
-
-                if let Err(err) = reciver {
-                    eprint!("Error: {:?}", err);
-                    continue;
-                }
-                let reciver = reciver.unwrap();
+                let reciver = receiver_clone.clone();
 
                 if let Ok(command) = reciver.try_recv() {
                     current_status = command;
