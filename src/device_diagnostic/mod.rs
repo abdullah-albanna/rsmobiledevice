@@ -1,10 +1,12 @@
 use crate::{device::DeviceClient, devices::SingleDevice};
-use std::{fmt::Display, marker::PhantomData};
-mod errors;
-
+use enums::{DevicePowerAction, DiagnosticBehavior, DiagnosticType, IORegPlane};
 use errors::DeviceDiagnosticError;
 use plist_plus::Plist;
 use rusty_libimobiledevice::services::diagnostics_relay::DiagnosticsRelay;
+use std::marker::PhantomData;
+
+pub mod enums;
+pub mod errors;
 
 const DIAGNOSTICS_RELAY_SERVICE: &str = "com.apple.mobile.diagnostics_relay";
 
@@ -18,39 +20,6 @@ pub struct DeviceDiagnostic<T> {
     _phantom: PhantomData<T>,
 }
 
-#[derive(Debug)]
-enum DevicePowerAction {
-    Sleep,
-    Shutdown(DiagnosticBehavior),
-    Restart(DiagnosticBehavior),
-}
-
-#[derive(Debug)]
-pub enum DiagnosticBehavior {
-    /// wait until the diagnostic relay gets freed before execution
-    WaitUntilDisconnected = 1 << 1, // Equivalent to 2
-    ShowSuccessMessage = 1 << 2, // Equivalent to 4
-    ShowFailureMessage = 1 << 3, // Equivalent to 8
-}
-
-pub enum IORegPlane {
-    IODeviceTree,
-    IOPower,
-    IOService,
-    None,
-}
-
-impl Display for IORegPlane {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            IORegPlane::None => write!(f, "None"),
-            IORegPlane::IOPower => write!(f, "IOPower"),
-            IORegPlane::IOService => write!(f, "IOService"),
-            IORegPlane::IODeviceTree => write!(f, "IODeviceTree"),
-        }
-    }
-}
-
 impl<T> DeviceDiagnostic<T> {
     pub fn new(device: DeviceClient<T>) -> DeviceDiagnostic<T> {
         DeviceDiagnostic {
@@ -59,25 +28,6 @@ impl<T> DeviceDiagnostic<T> {
         }
     }
 }
-
-pub enum DiagnosticType {
-    All,
-    WiFi,
-    GasGauge,
-    NAND,
-}
-
-impl Display for DiagnosticType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            DiagnosticType::All => write!(f, "All"),
-            DiagnosticType::WiFi => write!(f, "WiFi"),
-            DiagnosticType::NAND => write!(f, "NAND"),
-            DiagnosticType::GasGauge => write!(f, "GasGauge"),
-        }
-    }
-}
-
 impl DeviceDiagnostic<SingleDevice> {
     fn _get_diagnostic_relay(&self) -> Result<DiagnosticsRelay, DeviceDiagnosticError> {
         let device = self
