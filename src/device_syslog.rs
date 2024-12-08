@@ -238,7 +238,7 @@ pub struct DeviceSysLog<T> {
     devices: Arc<DeviceClient<T>>,
     sender: Sender<LoggerCommand>,
     receiver: Arc<Receiver<LoggerCommand>>,
-    filter: LogFilter,
+    filter: Arc<LogFilter>,
     _phantom: std::marker::PhantomData<T>,
 }
 
@@ -249,7 +249,7 @@ impl<T> DeviceSysLog<T> {
             devices: Arc::new(devices),
             sender: tx,
             receiver: Arc::new(rx),
-            filter: LogFilter::Nothing,
+            filter: Arc::new(LogFilter::Nothing),
             _phantom: std::marker::PhantomData::<T>,
         }
     }
@@ -263,7 +263,7 @@ impl DeviceSysLog<SingleDevice> {
     {
         let devices_clone = Arc::clone(&self.devices);
         let receiver_clone = Arc::clone(&self.receiver);
-        let filter_clone = Arc::new(self.filter.clone());
+        let filter_clone = Arc::clone(&self.filter);
 
         // Spawn a new thread to handle logging at the background
         thread::spawn(move || {
@@ -311,14 +311,13 @@ impl DeviceSysLog<SingleDevice> {
     }
 
     pub fn set_filter(&mut self, filter: LogFilter) {
-        self.filter = filter;
+        self.filter = filter.into();
     }
 
-    pub fn log_to_stdout(&self) {
-        self.sender
-            .send(LoggerCommand::StartLogging)
-            .unwrap_or_default();
+    pub fn log_to_stdout(&self) -> Result<(), DeviceSysLogError> {
+        self.sender.send(LoggerCommand::StartLogging)?;
         self._start_service(|logs| println!("{}", get_parsed_log_colored(&logs)));
+        Ok(())
     }
 
     pub fn log_to_file<S>(&self, file_path: &S) -> Result<(), DeviceSysLogError>
@@ -358,7 +357,8 @@ impl DeviceSysLog<SingleDevice> {
         Ok(())
     }
 
-    pub fn stop_logging(&self) {
-        self.sender.send(LoggerCommand::StopLogging).unwrap();
+    pub fn stop_logging(&self) -> Result<(), DeviceSysLogError> {
+        self.sender.send(LoggerCommand::StopLogging)?;
+        Ok(())
     }
 }
