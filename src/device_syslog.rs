@@ -110,70 +110,74 @@ pub enum LogFilter {
     Nothing,
 }
 
+enum LogAction {
+    Continue,
+    Log,
+    Break,
+}
+
 impl LogFilter {
     // Method to apply filters to a log line
-    pub fn apply_and_is_okay_to_continue(&self, logs_data: &mut LogsData) -> bool {
+    fn apply(&self, logs_data: &LogsData) -> LogAction {
         match self {
             LogFilter::Match(pattern) => {
                 let message = logs_data.message;
                 if !message.contains(pattern) {
-                    *logs_data = LogsData::default();
+                    return LogAction::Log;
                 }
-                true
+                LogAction::Continue
             }
             LogFilter::Trigger(_) => todo!(),
             LogFilter::Untrigger(pattern) => {
                 let message = logs_data.message;
                 if !message.contains(pattern) {
-                    return true;
+                    return LogAction::Log;
                 }
-                false
+                LogAction::Break
             }
             LogFilter::Process(processes) => {
                 let process = logs_data.process;
                 for proc in processes {
                     if !process.contains(proc) {
-                        *logs_data = LogsData::default();
-                        break;
+                        return LogAction::Continue;
                     }
                 }
-                true
+                LogAction::Log
             }
             LogFilter::Exclude(exclude_processes) => {
                 let process = logs_data.process;
                 for exproc in exclude_processes {
                     if process.contains(exproc) {
-                        *logs_data = LogsData::default();
-                        break;
+                        return LogAction::Continue;
                     }
                 }
-                true
+                LogAction::Log
             }
             LogFilter::Quiet => {
                 let process = logs_data.process;
 
                 if QUITE.contains(&process) {
-                    *logs_data = LogsData::default();
+                    return LogAction::Continue;
                 }
-                true
+                LogAction::Log
             }
             LogFilter::KernelOnly => {
                 let process = logs_data.process;
 
                 if !process.contains("kernel") {
-                    *logs_data = LogsData::default();
+                    return LogAction::Continue;
                 }
-                true
+                LogAction::Log
             }
             LogFilter::NoKernel => {
                 let process = logs_data.process;
 
                 if process.contains("kernel") {
-                    *logs_data = LogsData::default();
+                    return LogAction::Continue;
                 }
-                true
+                LogAction::Log
             }
-            LogFilter::Nothing => true,
+            LogFilter::Nothing => LogAction::Log,
         }
     }
 }
@@ -293,17 +297,13 @@ impl DeviceSysLog<SingleDevice> {
 
                             for line in logs_raw_string.split_terminator('\n') {
                                 let line = line.trim_matches('\0'); // Remove null characters
-                                let mut log_data = process_logs(line);
+                                let log_data = process_logs(line);
 
-                                if !filter_clone.apply_and_is_okay_to_continue(&mut log_data) {
-                                    break;
+                                match filter_clone.apply(&log_data) {
+                                    LogAction::Continue => continue,
+                                    LogAction::Break => break,
+                                    LogAction::Log => callback(log_data),
                                 }
-
-                                if log_data == LogsData::default() {
-                                    continue;
-                                }
-
-                                callback(log_data);
                             }
                         }
                         Err(err) => {
