@@ -279,9 +279,7 @@ impl DeviceSysLog<SingleDevice> {
             loop {
                 // Listen for commands to start/stop logging
 
-                let reciver = receiver_clone.clone();
-
-                if let Ok(command) = reciver.try_recv() {
+                if let Ok(command) = receiver_clone.try_recv() {
                     current_status = command;
                 }
 
