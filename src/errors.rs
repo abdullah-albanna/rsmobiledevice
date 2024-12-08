@@ -2,6 +2,10 @@ use plist_plus::error::PlistError;
 use rusty_libimobiledevice::error::{AfcError, IdeviceError, InstProxyError, LockdowndError};
 use thiserror::Error;
 
+pub use crate::device_diagnostic::errors::DeviceDiagnosticError;
+pub use crate::device_info::errors::DeviceInfoError;
+pub use crate::device_syslog::errors::DeviceSysLogError;
+
 #[derive(Debug, Error)]
 pub enum DeviceClientError {
     #[error("IDevice Error: {0}")]
@@ -42,16 +46,4 @@ pub enum DeviceInstallerError {
 
     #[error("Device was not found, make sure it's connected")]
     DeviceNotFound,
-}
-
-#[derive(Debug, Error)]
-pub enum IDeviceErrors {
-    #[error("Lockdownd Error: {0}")]
-    LockdowndError(#[from] LockdowndError),
-
-    #[error("Plist Error: {0}")]
-    PlistError(#[from] PlistError),
-
-    #[error("Key not found")]
-    KeyNotFound,
 }

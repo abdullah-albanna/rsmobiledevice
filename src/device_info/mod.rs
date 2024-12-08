@@ -2,11 +2,15 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::marker::PhantomData;
 
+pub mod domains;
+pub mod errors;
+pub mod keys;
+
 use crate::device::DeviceClient;
-use crate::device_domains::DeviceDomains;
-use crate::device_keys::DeviceKeys;
-use crate::devices::{DeviceGroup, SingleDevice};
-use crate::errors::IDeviceErrors;
+use crate::devices_collection::{DeviceGroup, SingleDevice};
+use domains::DeviceDomains;
+use errors::DeviceInfoError;
+use keys::DeviceKeys;
 use plist_plus::Plist;
 
 use rusty_libimobiledevice;
@@ -73,7 +77,7 @@ impl DeviceInfo<SingleDevice> {
         &self,
         key: impl Into<String> + Copy,
         domain: DeviceDomains,
-    ) -> Result<Plist, IDeviceErrors> {
+    ) -> Result<Plist, DeviceInfoError> {
         let device = self.devices.get_device().unwrap();
         let lockdownd = device.new_lockdownd_client("rsmobiledevice-singledevice")?;
         let output = lockdownd.get_value(key.into(), domain.as_string())?;
@@ -84,7 +88,7 @@ impl DeviceInfo<SingleDevice> {
     pub fn get_values(
         &self,
         domain: DeviceDomains,
-    ) -> Result<HashMap<String, String>, IDeviceErrors> {
+    ) -> Result<HashMap<String, String>, DeviceInfoError> {
         let mut dict: HashMap<String, String> = HashMap::new();
 
         let output = self.get_plist("", domain)?;
@@ -105,17 +109,17 @@ impl DeviceInfo<SingleDevice> {
         &self,
         key: DeviceKeys,
         domain: DeviceDomains,
-    ) -> Result<String, IDeviceErrors> {
+    ) -> Result<String, DeviceInfoError> {
         let values = self.get_values(domain)?;
 
         if let Some(key) = values.get(&key.to_string()) {
             Ok(key.to_owned())
         } else {
-            Err(IDeviceErrors::KeyNotFound)
+            Err(DeviceInfoError::KeyNotFound)
         }
     }
 
-    pub fn get_all_values(&self) -> Result<HashMap<String, String>, IDeviceErrors> {
+    pub fn get_all_values(&self) -> Result<HashMap<String, String>, DeviceInfoError> {
         self.get_values(DeviceDomains::All)
     }
 
@@ -134,7 +138,7 @@ impl DeviceInfo<DeviceGroup> {
         &self,
         key: impl Into<String> + Copy,
         domain: DeviceDomains,
-    ) -> Result<Vec<Plist>, IDeviceErrors> {
+    ) -> Result<Vec<Plist>, DeviceInfoError> {
         let devices = self.devices.get_devices().unwrap();
 
         let lockdownds: Vec<Result<LockdowndClient<'_>, LockdowndError>> = devices
@@ -147,7 +151,7 @@ impl DeviceInfo<DeviceGroup> {
         for lockdownd in lockdownds {
             match lockdownd {
                 Ok(lockdown) => success_lockdownds.push(lockdown),
-                Err(err) => return Err(IDeviceErrors::LockdowndError(err)),
+                Err(err) => return Err(DeviceInfoError::LockdowndError(err)),
             }
         }
 
@@ -161,7 +165,7 @@ impl DeviceInfo<DeviceGroup> {
         for plist in plists {
             match plist {
                 Ok(p) => success_plists.push(p),
-                Err(err) => return Err(IDeviceErrors::LockdowndError(err)),
+                Err(err) => return Err(DeviceInfoError::LockdowndError(err)),
             }
         }
 
@@ -171,7 +175,7 @@ impl DeviceInfo<DeviceGroup> {
     pub fn get_values(
         &self,
         domain: DeviceDomains,
-    ) -> Result<HashMap<u32, HashMap<String, String>>, IDeviceErrors> {
+    ) -> Result<HashMap<u32, HashMap<String, String>>, DeviceInfoError> {
         let mut dicts: HashMap<u32, HashMap<String, String>> = HashMap::new();
 
         for (i, plist) in self.get_plist("", domain)?.into_iter().enumerate() {
@@ -196,7 +200,7 @@ impl DeviceInfo<DeviceGroup> {
         &self,
         key: DeviceKeys,
         domain: DeviceDomains,
-    ) -> Result<Vec<String>, IDeviceErrors> {
+    ) -> Result<Vec<String>, DeviceInfoError> {
         let values = self.get_values(domain)?;
 
         let mut selected_key_values = Vec::new();
@@ -205,13 +209,13 @@ impl DeviceInfo<DeviceGroup> {
             if let Some(key) = value.get(&key.to_string()) {
                 selected_key_values.push(key.to_owned())
             } else {
-                return Err(IDeviceErrors::KeyNotFound);
+                return Err(DeviceInfoError::KeyNotFound);
             }
         }
         Ok(selected_key_values)
     }
 
-    pub fn get_all_values(&self) -> Result<HashMap<u32, HashMap<String, String>>, IDeviceErrors> {
+    pub fn get_all_values(&self) -> Result<HashMap<u32, HashMap<String, String>>, DeviceInfoError> {
         self.get_values(DeviceDomains::All)
     }
 

@@ -15,7 +15,7 @@ use rusty_libimobiledevice::services::{
 };
 use zip::ZipArchive;
 
-use crate::{device::DeviceClient, devices::SingleDevice, errors::DeviceInstallerError};
+use crate::{device::DeviceClient, devices_collection::SingleDevice, errors::DeviceInstallerError};
 
 const PKG_PATH: &str = "PublicStaging";
 const IPCC_REMOTE_FOLDER: &str = "rsmobiledevice.ipcc";

@@ -7,7 +7,7 @@ pub use errors::DeviceSysLogError;
 pub use filters::{LogAction, LogFilter};
 pub use logs_data::LogsData;
 
-use crate::{device::DeviceClient, devices::SingleDevice};
+use crate::{device::DeviceClient, devices_collection::SingleDevice};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use rusty_libimobiledevice::service::ServiceClient;
 use std::fs;

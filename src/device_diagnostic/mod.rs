@@ -1,4 +1,4 @@
-use crate::{device::DeviceClient, devices::SingleDevice};
+use crate::{device::DeviceClient, devices_collection::SingleDevice};
 use enums::{DevicePowerAction, DiagnosticBehavior, DiagnosticType, IORegPlane};
 use errors::DeviceDiagnosticError;
 use plist_plus::Plist;

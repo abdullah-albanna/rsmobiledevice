@@ -5,7 +5,7 @@ use rusty_libimobiledevice::{
 use std::marker::PhantomData;
 
 use crate::{
-    devices::{DeviceGroup, Devices, SingleDevice},
+    devices_collection::{DeviceGroup, Devices, SingleDevice},
     errors::DeviceClientError,
 };
 
