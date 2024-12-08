@@ -60,6 +60,24 @@ impl<T> DeviceDiagnostic<T> {
     }
 }
 
+pub enum DiagnosticType {
+    All,
+    WiFi,
+    GasGauge,
+    NAND,
+}
+
+impl Display for DiagnosticType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DiagnosticType::All => write!(f, "All"),
+            DiagnosticType::WiFi => write!(f, "WiFi"),
+            DiagnosticType::NAND => write!(f, "NAND"),
+            DiagnosticType::GasGauge => write!(f, "GasGauge"),
+        }
+    }
+}
+
 impl DeviceDiagnostic<SingleDevice> {
     fn _get_diagnostic_relay(&self) -> Result<DiagnosticsRelay, DeviceDiagnosticError> {
         let device = self
@@ -112,6 +130,14 @@ impl DeviceDiagnostic<SingleDevice> {
             plist.array_insert_item(Plist::new_string(&(key.into())), i as u32)?;
         }
         Ok(relay.query_mobilegestalt(plist)?)
+    }
+
+    pub fn query_diagnostics(
+        &self,
+        r#type: DiagnosticType,
+    ) -> Result<Plist, DeviceDiagnosticError> {
+        let relay = self._get_diagnostic_relay()?;
+        Ok(relay.request_diagnostics(r#type.to_string())?)
     }
     pub fn sleep(&self) -> Result<(), DeviceDiagnosticError> {
         self._device_power_action(DevicePowerAction::Sleep)
