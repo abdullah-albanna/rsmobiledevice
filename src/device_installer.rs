@@ -23,7 +23,7 @@ const IPA_REMOTE_FILE: &str = "rsmobiledevice.ipa";
 
 #[derive(Debug)]
 pub struct DeviceInstaller<T> {
-    devices: DeviceClient<T>,
+    device: DeviceClient<T>,
     _p: PhantomData<T>,
 }
 
@@ -73,11 +73,11 @@ impl DeviceInstaller<SingleDevice> {
         options: Option<HashMap<&str, &str>>,
     ) -> Result<(), DeviceInstallerError> {
         let device = self
-            .devices
+            .device
             .get_device()
             .ok_or(DeviceInstallerError::DeviceNotFound)?;
 
-        let afc_client = self.devices.get_afc_client().unwrap();
+        let afc_client = self.device.get_afc_client().unwrap();
 
         self.check_or_create_path(&afc_client, PKG_PATH)?;
 
@@ -278,9 +278,9 @@ impl DeviceInstaller<SingleDevice> {
 }
 
 impl<T> DeviceInstaller<T> {
-    pub fn new(devices: DeviceClient<T>) -> DeviceInstaller<T> {
+    pub fn new(device: DeviceClient<T>) -> DeviceInstaller<T> {
         DeviceInstaller {
-            devices,
+            device,
             _p: PhantomData::<T>,
         }
     }
