@@ -11,16 +11,16 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct DeviceClient<T = DeviceGroup> {
-    devices: Devices,
+    device: Devices,
     _p: PhantomData<T>,
 }
 
 impl DeviceClient {
     pub fn new() -> Result<DeviceClient<DeviceGroup>, DeviceClientError> {
-        let devices = idevice::get_devices()?;
+        let device = idevice::get_devices()?;
 
         Ok(DeviceClient {
-            devices: Devices::Multiple(devices),
+            device: Devices::Multiple(device),
             _p: PhantomData::<DeviceGroup>,
         })
     }
@@ -28,7 +28,7 @@ impl DeviceClient {
 
 impl DeviceClient<SingleDevice> {
     pub fn get_device(&self) -> Option<&idevice::Device> {
-        self.devices.get_device()
+        self.device.get_device()
     }
 
     pub fn get_afc_client(&self) -> Result<AfcClient, DeviceClientError> {
@@ -51,9 +51,9 @@ impl DeviceClient<SingleDevice> {
 
 impl DeviceClient<DeviceGroup> {
     pub fn get_first_device(self) -> Option<DeviceClient<SingleDevice>> {
-        if let Devices::Multiple(device) = self.devices {
+        if let Devices::Multiple(device) = self.device {
             Some(DeviceClient {
-                devices: Devices::Single(device.first().unwrap().clone()),
+                device: Devices::Single(device.first().unwrap().clone()),
                 _p: PhantomData::<SingleDevice>,
             })
         } else {
@@ -62,7 +62,7 @@ impl DeviceClient<DeviceGroup> {
     }
 
     pub fn get_devices(&self) -> Option<&Vec<idevice::Device>> {
-        self.devices.get_devices()
+        self.device.get_devices()
     }
 }
 impl TryFrom<String> for DeviceClient {
@@ -101,7 +101,7 @@ impl TryFrom<String> for DeviceClient {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let device = idevice::get_device(value)?;
         Ok(Self {
-            devices: Devices::Single(device),
+            device: Devices::Single(device),
             _p: PhantomData,
         })
     }
