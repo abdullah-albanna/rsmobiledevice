@@ -149,6 +149,21 @@ impl DeviceDiagnostic<DeviceGroup> {
         Ok(())
     }
 
+    /// currently this panics for some reason
+    pub fn query_ioregentry_key(
+        &self,
+        key: impl Into<String>,
+    ) -> Result<Vec<Plist>, DeviceDiagnosticError> {
+        let relaies = self._get_diagnostic_relaies()?;
+
+        let key: String = key.into();
+
+        Ok(relaies
+            .into_iter()
+            .map(|relay| relay.query_ioregistry_entry(&key, ""))
+            .collect::<Result<Vec<_>, _>>()?)
+    }
+
     pub fn query_diagnostics_all(
         &self,
         r#type: DiagnosticType,
