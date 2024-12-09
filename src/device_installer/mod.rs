@@ -15,6 +15,8 @@ use rusty_libimobiledevice::services::{
 };
 use zip::ZipArchive;
 
+pub mod errors;
+
 use crate::{device::DeviceClient, devices_collection::SingleDevice, errors::DeviceInstallerError};
 
 const PKG_PATH: &str = "PublicStaging";
