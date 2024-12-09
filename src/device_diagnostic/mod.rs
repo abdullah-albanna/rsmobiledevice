@@ -149,8 +149,28 @@ impl DeviceDiagnostic<DeviceGroup> {
         Ok(())
     }
 
+    pub fn query_mobilegestalt_all(
+        &self,
+        keys: Vec<impl Into<String>>,
+    ) -> Result<Vec<Plist>, DeviceDiagnosticError> {
+        let relaies = self._get_diagnostic_relaies()?;
+        let mut plist = Plist::new_array();
+
+        for (i, key) in keys.into_iter().enumerate() {
+            plist.array_insert_item(Plist::new_string(&(key.into())), i as u32)?;
+        }
+
+        Ok(relaies
+            .into_iter()
+            .map(|relay| {
+                let plist = plist.clone();
+                relay.query_mobilegestalt(plist)
+            })
+            .collect::<Result<Vec<_>, _>>()?)
+    }
+
     /// currently this panics for some reason
-    pub fn query_ioregentry_key(
+    pub fn query_ioregentry_key_all(
         &self,
         key: impl Into<String>,
     ) -> Result<Vec<Plist>, DeviceDiagnosticError> {
