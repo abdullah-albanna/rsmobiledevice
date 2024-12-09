@@ -148,4 +148,14 @@ impl DeviceDiagnostic<DeviceGroup> {
         }
         Ok(())
     }
+
+    pub fn sleep_all(&self) -> Result<(), DeviceDiagnosticError> {
+        self._devices_power_action(DevicePowerAction::Sleep)
+    }
+    pub fn restart_all(&self, flag: DiagnosticBehavior) -> Result<(), DeviceDiagnosticError> {
+        self._devices_power_action(DevicePowerAction::Restart(flag))
+    }
+    pub fn shutdown_all(&self, flag: DiagnosticBehavior) -> Result<(), DeviceDiagnosticError> {
+        self._devices_power_action(DevicePowerAction::Shutdown(flag))
+    }
 }
