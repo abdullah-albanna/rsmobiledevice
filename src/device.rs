@@ -100,6 +100,16 @@ impl DeviceClient<DeviceGroup> {
             .expect("This is a bug, please report")
     }
 
+    pub fn get_afc_clients<E: AFCClientErrorTrait>(&self) -> Result<Vec<AfcClient>, E> {
+        self.get_devices()
+            .iter()
+            .map(|device| {
+                AfcClient::start_service(device, "rsmobiledevice-afc_clients")
+                    .map_err(E::afcclient_error)
+            })
+            .collect()
+    }
+
     pub fn get_lockdownd_clients<E: LockdowndErrorTrait>(&self) -> Result<Vec<LockdowndClient>, E> {
         self.get_devices()
             .iter()
