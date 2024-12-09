@@ -20,7 +20,7 @@ use rusty_libimobiledevice::services::lockdownd::LockdowndClient;
 
 #[derive(Debug)]
 pub struct DeviceInfo<T> {
-    devices: DeviceClient<T>,
+    device: DeviceClient<T>,
     _p: PhantomData<T>,
 }
 
@@ -78,7 +78,7 @@ impl DeviceInfo<SingleDevice> {
         key: impl Into<String> + Copy,
         domain: DeviceDomains,
     ) -> Result<Plist, DeviceInfoError> {
-        let device = self.devices.get_device().unwrap();
+        let device = self.device.get_device().unwrap();
         let lockdownd = device.new_lockdownd_client("rsmobiledevice-singledevice")?;
         let output = lockdownd.get_value(key.into(), domain.as_string())?;
 
@@ -139,7 +139,7 @@ impl DeviceInfo<DeviceGroup> {
         key: impl Into<String> + Copy,
         domain: DeviceDomains,
     ) -> Result<Vec<Plist>, DeviceInfoError> {
-        let devices = self.devices.get_devices().unwrap();
+        let devices = self.device.get_devices().unwrap();
 
         let lockdownds: Vec<Result<LockdowndClient<'_>, LockdowndError>> = devices
             .iter()
@@ -231,9 +231,9 @@ impl DeviceInfo<DeviceGroup> {
 }
 
 impl<T> DeviceInfo<T> {
-    pub fn new(devices: DeviceClient<T>) -> DeviceInfo<T> {
+    pub fn new(device: DeviceClient<T>) -> DeviceInfo<T> {
         DeviceInfo {
-            devices,
+            device,
             _p: PhantomData::<T>,
         }
     }
