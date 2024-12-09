@@ -2,7 +2,7 @@ use rusty_libimobiledevice::{
     idevice,
     services::{afc::AfcClient, lockdownd::LockdowndClient},
 };
-use std::marker::PhantomData;
+use std::{marker::PhantomData, process::id};
 
 use crate::{
     devices_collection::{DeviceGroup, Devices, SingleDevice},
@@ -46,6 +46,16 @@ impl DeviceClient<SingleDevice> {
 
         let lockdown = LockdowndClient::new(device, "deviceclient-lockdown-client")?;
         Ok(lockdown)
+    }
+    pub fn is_connected(&self) -> bool {
+        if let Some(device) = self.get_device() {
+            if let Ok(connected_devices) = idevice::get_devices() {
+                return connected_devices
+                    .iter()
+                    .any(|d| d.get_udid() == device.get_udid());
+            }
+        }
+        false
     }
 }
 
