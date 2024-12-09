@@ -105,7 +105,7 @@ impl DeviceDiagnostic<SingleDevice> {
 }
 
 impl DeviceDiagnostic<DeviceGroup> {
-    pub fn _get_diagnostic_relays(&self) -> Result<Vec<DiagnosticsRelay>, DeviceDiagnosticError> {
+    fn _get_diagnostic_relays(&self) -> Result<Vec<DiagnosticsRelay>, DeviceDiagnosticError> {
         let devices = self.device.get_devices();
 
         let mut lockdownds = self
@@ -132,5 +132,20 @@ impl DeviceDiagnostic<DeviceGroup> {
             .collect();
 
         relays
+    }
+
+    fn _devices_power_action(
+        &self,
+        action: DevicePowerAction,
+    ) -> Result<(), DeviceDiagnosticError> {
+        let relaies = self._get_diagnostic_relays()?;
+        for relay in relaies {
+            match action {
+                DevicePowerAction::Sleep => relay.sleep()?,
+                DevicePowerAction::Restart(flag) => relay.restart(flag as core::ffi::c_uint)?,
+                DevicePowerAction::Shutdown(flag) => relay.shutdown(flag as core::ffi::c_uint)?,
+            }
+        }
+        Ok(())
     }
 }

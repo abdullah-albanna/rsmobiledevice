@@ -7,7 +7,7 @@ pub(crate) enum DevicePowerAction {
     Restart(DiagnosticBehavior),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum DiagnosticBehavior {
     /// wait until the diagnostic relay gets freed before execution
     WaitUntilDisconnected = 1 << 1, // Equivalent to 2
