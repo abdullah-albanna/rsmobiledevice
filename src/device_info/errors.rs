@@ -25,7 +25,7 @@ impl DeviceNotFoundErrorTrait for DeviceInfoError {
 }
 
 impl LockdowndErrorTrait for DeviceInfoError {
-    fn lockdown_error(error: LockdowndError) -> Self {
+    fn lockdownd_error(error: LockdowndError) -> Self {
         Self::LockdowndError(error)
     }
 }

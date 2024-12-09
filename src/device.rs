@@ -47,12 +47,12 @@ impl DeviceClient<SingleDevice> {
         Ok(afc_client)
     }
 
-    pub fn get_lockdown_client<E: LockdowndErrorTrait>(&self) -> Result<LockdowndClient, E> {
+    pub fn get_lockdownd_client<E: LockdowndErrorTrait>(&self) -> Result<LockdowndClient, E> {
         let device = self.get_device();
 
-        let lockdown = LockdowndClient::new(device, "deviceclient-lockdown-client")
-            .map_err(|err| E::lockdown_error(err))?;
-        Ok(lockdown)
+        let lockdownd = LockdowndClient::new(device, "deviceclient-lockdownd-client")
+            .map_err(|err| E::lockdownd_error(err))?;
+        Ok(lockdownd)
     }
 
     pub fn check_connected<E: DeviceNotFoundErrorTrait>(&self) -> Result<(), E> {
@@ -100,12 +100,12 @@ impl DeviceClient<DeviceGroup> {
             .expect("This is a bug, please report")
     }
 
-    pub fn get_lockdown_clients<E: LockdowndErrorTrait>(&self) -> Result<Vec<LockdowndClient>, E> {
+    pub fn get_lockdownd_clients<E: LockdowndErrorTrait>(&self) -> Result<Vec<LockdowndClient>, E> {
         self.get_devices()
             .iter()
             .map(|device| {
-                LockdowndClient::new(device, "deviceclient-lockdown-clients")
-                    .map_err(E::lockdown_error)
+                LockdowndClient::new(device, "deviceclient-lockdownd-clients")
+                    .map_err(E::lockdownd_error)
             })
             .collect()
     }

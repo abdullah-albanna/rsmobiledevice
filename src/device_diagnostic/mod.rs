@@ -32,9 +32,11 @@ impl DeviceDiagnostic<SingleDevice> {
     fn _get_diagnostic_relay(&self) -> Result<DiagnosticsRelay, DeviceDiagnosticError> {
         let device = self.device.get_device();
 
-        let mut lockdown = self.device.get_lockdown_client::<DeviceDiagnosticError>()?;
+        let mut lockdownd = self
+            .device
+            .get_lockdownd_client::<DeviceDiagnosticError>()?;
 
-        let diagnostic_service = lockdown
+        let diagnostic_service = lockdownd
             .start_service(DIAGNOSTICS_RELAY_SERVICE, true)
             .map_err(|e| DeviceDiagnosticError::ServiceError(e.to_string()))?;
 

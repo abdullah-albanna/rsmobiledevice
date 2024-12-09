@@ -31,7 +31,7 @@ impl DeviceNotFoundErrorTrait for DeviceDiagnosticError {
 }
 
 impl LockdowndErrorTrait for DeviceDiagnosticError {
-    fn lockdown_error(error: LockdowndError) -> Self {
+    fn lockdownd_error(error: LockdowndError) -> Self {
         Self::LockdowndError(error)
     }
 }

@@ -64,13 +64,13 @@ impl DeviceSysLog<SingleDevice> {
             let mut current_status: LoggerCommand = LoggerCommand::StopLogging;
 
             let device = devices_clone.get_device();
-            let mut lockdown = devices_clone
-                .get_lockdown_client::<DeviceSysLogError>()
-                .expect("Could't get the device lockdown");
-            let lockdown_service = lockdown
+            let mut lockdownd = devices_clone
+                .get_lockdownd_client::<DeviceSysLogError>()
+                .expect("Could't get the device lockdownd");
+            let lockdownd_service = lockdownd
                 .start_service(DEVICE_SYSLOG_SERVICE, true)
                 .expect("Could't start the syslog service");
-            let service = ServiceClient::new(device, lockdown_service)
+            let service = ServiceClient::new(device, lockdownd_service)
                 .expect("Could't create a service client for syslog");
 
             loop {

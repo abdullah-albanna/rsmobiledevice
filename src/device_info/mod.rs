@@ -80,7 +80,7 @@ impl DeviceInfo<SingleDevice> {
     ) -> Result<Plist, DeviceInfoError> {
         self.device.check_connected::<DeviceInfoError>()?;
 
-        let lockdownd = self.device.get_lockdown_client::<DeviceInfoError>()?;
+        let lockdownd = self.device.get_lockdownd_client::<DeviceInfoError>()?;
         let output = lockdownd
             .get_value(key.into(), domain.as_string())
             .map_err(DeviceInfoError::LockdowndError)?;
@@ -153,14 +153,14 @@ impl DeviceInfo<DeviceGroup> {
 
         for lockdownd in lockdownds {
             match lockdownd {
-                Ok(lockdown) => success_lockdownds.push(lockdown),
+                Ok(ld) => success_lockdownds.push(ld),
                 Err(err) => return Err(DeviceInfoError::LockdowndError(err)),
             }
         }
 
         let plists: Vec<Result<Plist, LockdowndError>> = success_lockdownds
             .iter()
-            .map(|lockdown| lockdown.get_value(key.into(), domain.as_string()))
+            .map(|ld| ld.get_value(key.into(), domain.as_string()))
             .collect();
 
         let mut success_plists = Vec::new();

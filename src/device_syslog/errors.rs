@@ -13,7 +13,7 @@ pub enum DeviceSysLogError {
 }
 
 impl LockdowndErrorTrait for DeviceSysLogError {
-    fn lockdown_error(error: rusty_libimobiledevice::error::LockdowndError) -> Self {
+    fn lockdownd_error(error: rusty_libimobiledevice::error::LockdowndError) -> Self {
         Self::LockdowndError(error)
     }
 }

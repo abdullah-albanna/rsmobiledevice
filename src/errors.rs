@@ -11,7 +11,7 @@ pub trait DeviceNotFoundErrorTrait {
 }
 
 pub trait LockdowndErrorTrait {
-    fn lockdown_error(error: LockdowndError) -> Self;
+    fn lockdownd_error(error: LockdowndError) -> Self;
 }
 
 pub trait AFCClientErrorTrait {
@@ -34,7 +34,7 @@ pub enum DeviceClientError {
 }
 
 impl LockdowndErrorTrait for DeviceClientError {
-    fn lockdown_error(error: LockdowndError) -> Self {
+    fn lockdownd_error(error: LockdowndError) -> Self {
         Self::LockdowndError(error)
     }
 }
