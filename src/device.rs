@@ -100,6 +100,16 @@ impl DeviceClient<DeviceGroup> {
             .expect("This is a bug, please report")
     }
 
+    pub fn get_lockdown_clients<E: LockdowndErrorTrait>(&self) -> Result<Vec<LockdowndClient>, E> {
+        self.get_devices()
+            .iter()
+            .map(|device| {
+                LockdowndClient::new(device, "deviceclient-lockdown-clients")
+                    .map_err(E::lockdown_error)
+            })
+            .collect()
+    }
+
     pub fn check_all_connected<E: DeviceNotFoundErrorTrait>(&self) -> Result<(), E> {
         if let Ok(connected_devices) = idevice::get_devices() {
             let connected_udids: Vec<String> =
