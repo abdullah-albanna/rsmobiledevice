@@ -1,3 +1,4 @@
+use core::panic;
 use rusty_libimobiledevice::{
     idevice,
     services::{afc::AfcClient, lockdownd::LockdowndClient},
@@ -67,6 +68,7 @@ impl DeviceClient<SingleDevice> {
         }
         Err(E::device_not_found())
     }
+
     pub fn is_connected(&self) -> bool {
         let device = self.get_device();
         if let Ok(connected_devices) = idevice::get_devices() {
@@ -79,14 +81,14 @@ impl DeviceClient<SingleDevice> {
 }
 
 impl DeviceClient<DeviceGroup> {
-    pub fn get_first_device(self) -> Option<DeviceClient<SingleDevice>> {
-        if let Devices::Multiple(device) = self.device {
-            Some(DeviceClient {
-                device: Devices::Single(device.first().unwrap().clone()),
-                _p: PhantomData::<SingleDevice>,
-            })
-        } else {
-            None
+    pub fn get_first_device(self) -> DeviceClient<SingleDevice> {
+        let Devices::Multiple(device) = self.device else {
+            panic!("This is a big, please report")
+        };
+
+        DeviceClient {
+            device: Devices::Single(device.first().unwrap().clone()),
+            _p: PhantomData::<SingleDevice>,
         }
     }
 
@@ -96,6 +98,22 @@ impl DeviceClient<DeviceGroup> {
         self.device
             .get_devices()
             .expect("This is a bug, please report")
+    }
+
+    pub fn check_all_connected<E: DeviceNotFoundErrorTrait>(&self) -> Result<(), E> {
+        if let Ok(connected_devices) = idevice::get_devices() {
+            let connected_udids: Vec<String> =
+                connected_devices.iter().map(|d| d.get_udid()).collect();
+
+            if self
+                .get_devices()
+                .iter()
+                .all(|device| connected_udids.contains(&device.get_udid()))
+            {
+                return Ok(());
+            }
+        }
+        Err(E::device_not_found())
     }
 
     pub fn are_connected(&self) -> bool {
