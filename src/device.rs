@@ -97,6 +97,19 @@ impl DeviceClient<DeviceGroup> {
             .get_devices()
             .expect("This is a bug, please report")
     }
+
+    pub fn are_connected(&self) -> bool {
+        if let Ok(connected_devices) = idevice::get_devices() {
+            let connected_udids: Vec<String> =
+                connected_devices.iter().map(|d| d.get_udid()).collect();
+
+            return self
+                .get_devices()
+                .iter()
+                .all(|device| connected_udids.contains(&device.get_udid()));
+        }
+        false
+    }
 }
 impl TryFrom<String> for DeviceClient {
     type Error = DeviceClientError;
