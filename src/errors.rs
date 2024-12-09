@@ -14,7 +14,7 @@ pub enum DeviceClientError {
     #[error("Lockdownd Error: {0}")]
     LockdowndError(#[from] LockdowndError),
 
-    #[error("Device Not Found, Make Sure it's Plugged")]
+    #[error("Device not found, make sure it's plugged")]
     DeviceNotFound,
 
     #[error("AFC Client Error: {0}")]
@@ -44,6 +44,6 @@ pub enum DeviceInstallerError {
     #[error("Installation Proxy Error: {0}")]
     InstallationProxyError(#[from] InstProxyError),
 
-    #[error("Device was not found, make sure it's connected")]
+    #[error("Device not found, make sure it's plugged")]
     DeviceNotFound,
 }
