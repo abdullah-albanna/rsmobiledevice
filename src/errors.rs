@@ -14,6 +14,10 @@ pub trait LockdowndErrorTrait {
     fn lockdown_error(error: LockdowndError) -> Self;
 }
 
+pub trait AFCClientErrorTrait {
+    fn afcclient_error(error: AfcError) -> Self;
+}
+
 #[derive(Debug, Error)]
 pub enum DeviceClientError {
     #[error("IDevice Error: {0}")]
@@ -37,6 +41,12 @@ impl LockdowndErrorTrait for DeviceClientError {
 impl DeviceNotFoundErrorTrait for DeviceClientError {
     fn device_not_found() -> Self {
         Self::DeviceNotFound
+    }
+}
+
+impl AFCClientErrorTrait for DeviceClientError {
+    fn afcclient_error(error: AfcError) -> Self {
+        Self::AFCClientError(error)
     }
 }
 
@@ -65,4 +75,16 @@ pub enum DeviceInstallerError {
 
     #[error("Device not found, make sure it's plugged")]
     DeviceNotFound,
+}
+
+impl AFCClientErrorTrait for DeviceInstallerError {
+    fn afcclient_error(error: AfcError) -> Self {
+        Self::AfcClientError(error)
+    }
+}
+
+impl DeviceNotFoundErrorTrait for DeviceInstallerError {
+    fn device_not_found() -> Self {
+        Self::DeviceNotFound
+    }
 }

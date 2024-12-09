@@ -77,7 +77,7 @@ impl DeviceInstaller<SingleDevice> {
             .get_device()
             .ok_or(DeviceInstallerError::DeviceNotFound)?;
 
-        let afc_client = self.device.get_afc_client().unwrap();
+        let afc_client = self.device.get_afc_client::<DeviceInstallerError>()?;
 
         self.check_or_create_path(&afc_client, PKG_PATH)?;
 

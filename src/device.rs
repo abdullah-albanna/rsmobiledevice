@@ -6,7 +6,9 @@ use std::marker::PhantomData;
 
 use crate::{
     devices_collection::{DeviceGroup, Devices, SingleDevice},
-    errors::{DeviceClientError, DeviceNotFoundErrorTrait, LockdowndErrorTrait},
+    errors::{
+        AFCClientErrorTrait, DeviceClientError, DeviceNotFoundErrorTrait, LockdowndErrorTrait,
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -31,13 +33,16 @@ impl DeviceClient<SingleDevice> {
         self.device.get_device()
     }
 
-    pub fn get_afc_client(&self) -> Result<AfcClient, DeviceClientError> {
+    pub fn get_afc_client<E: AFCClientErrorTrait + DeviceNotFoundErrorTrait>(
+        &self,
+    ) -> Result<AfcClient, E> {
         if let Some(device) = self.get_device() {
-            let afc_client = AfcClient::start_service(device, "rsmobiledevice-afc_client").unwrap();
+            let afc_client = AfcClient::start_service(device, "rsmobiledevice-afc_client")
+                .map_err(E::afcclient_error)?;
 
             Ok(afc_client)
         } else {
-            Err(DeviceClientError::DeviceNotFound)
+            Err(E::device_not_found())
         }
     }
 
