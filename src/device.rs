@@ -54,7 +54,7 @@ impl DeviceClient<SingleDevice> {
         Ok(lockdown)
     }
 
-    pub fn check_connected<T: DeviceNotFoundErrorTrait>(&self) -> Result<(), T> {
+    pub fn check_connected<E: DeviceNotFoundErrorTrait>(&self) -> Result<(), E> {
         if let Some(device) = self.get_device() {
             if let Ok(connected_devices) = idevice::get_devices() {
                 if connected_devices
@@ -65,7 +65,7 @@ impl DeviceClient<SingleDevice> {
                 }
             }
         }
-        Err(T::device_not_found())
+        Err(E::device_not_found())
     }
     pub fn is_connected(&self) -> bool {
         if let Some(device) = self.get_device() {
