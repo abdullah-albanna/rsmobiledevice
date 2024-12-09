@@ -149,6 +149,18 @@ impl DeviceDiagnostic<DeviceGroup> {
         Ok(())
     }
 
+    pub fn query_diagnostics_all(
+        &self,
+        r#type: DiagnosticType,
+    ) -> Result<Vec<Plist>, DeviceDiagnosticError> {
+        let relaies = self._get_diagnostic_relays()?;
+
+        Ok(relaies
+            .into_iter()
+            .map(|relay| relay.request_diagnostics(r#type.to_string()))
+            .collect::<Result<Vec<_>, _>>()?)
+    }
+
     pub fn sleep_all(&self) -> Result<(), DeviceDiagnosticError> {
         self._devices_power_action(DevicePowerAction::Sleep)
     }
