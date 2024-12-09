@@ -30,10 +30,7 @@ impl<T> DeviceDiagnostic<T> {
 }
 impl DeviceDiagnostic<SingleDevice> {
     fn _get_diagnostic_relay(&self) -> Result<DiagnosticsRelay, DeviceDiagnosticError> {
-        let device = self
-            .device
-            .get_device()
-            .ok_or(DeviceDiagnosticError::DeviceNotFound)?;
+        let device = self.device.get_device();
 
         let mut lockdown = self.device.get_lockdown_client::<DeviceDiagnosticError>()?;
 

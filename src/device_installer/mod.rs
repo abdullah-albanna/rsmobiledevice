@@ -74,10 +74,7 @@ impl DeviceInstaller<SingleDevice> {
         file: &File,
         options: Option<HashMap<&str, &str>>,
     ) -> Result<(), DeviceInstallerError> {
-        let device = self
-            .device
-            .get_device()
-            .ok_or(DeviceInstallerError::DeviceNotFound)?;
+        let device = self.device.get_device();
 
         let afc_client = self.device.get_afc_client::<DeviceInstallerError>()?;
 

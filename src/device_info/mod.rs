@@ -142,7 +142,7 @@ impl DeviceInfo<DeviceGroup> {
         key: impl Into<String> + Copy,
         domain: DeviceDomains,
     ) -> Result<Vec<Plist>, DeviceInfoError> {
-        let devices = self.device.get_devices().unwrap();
+        let devices = self.device.get_devices();
 
         let lockdownds: Vec<Result<LockdowndClient<'_>, LockdowndError>> = devices
             .iter()

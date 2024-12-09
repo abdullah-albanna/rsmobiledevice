@@ -63,7 +63,7 @@ impl DeviceSysLog<SingleDevice> {
         thread::spawn(move || {
             let mut current_status: LoggerCommand = LoggerCommand::StopLogging;
 
-            let device = devices_clone.get_device().expect("Could't get the device");
+            let device = devices_clone.get_device();
             let mut lockdown = devices_clone
                 .get_lockdown_client::<DeviceSysLogError>()
                 .expect("Could't get the device lockdown");

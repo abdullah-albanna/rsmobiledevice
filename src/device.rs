@@ -29,25 +29,25 @@ impl DeviceClient {
 }
 
 impl DeviceClient<SingleDevice> {
-    pub fn get_device(&self) -> Option<&idevice::Device> {
-        self.device.get_device()
+    pub fn get_device(&self) -> &idevice::Device {
+        // this should never fail because this method only appear in a single device, thus we can
+        // get the device
+        self.device
+            .get_device()
+            .expect("This is a bug, please report")
     }
 
-    pub fn get_afc_client<E: AFCClientErrorTrait + DeviceNotFoundErrorTrait>(
-        &self,
-    ) -> Result<AfcClient, E> {
-        if let Some(device) = self.get_device() {
-            let afc_client = AfcClient::start_service(device, "rsmobiledevice-afc_client")
-                .map_err(E::afcclient_error)?;
+    pub fn get_afc_client<E: AFCClientErrorTrait>(&self) -> Result<AfcClient, E> {
+        let device = self.get_device();
 
-            Ok(afc_client)
-        } else {
-            Err(E::device_not_found())
-        }
+        let afc_client = AfcClient::start_service(device, "rsmobiledevice-afc_client")
+            .map_err(E::afcclient_error)?;
+
+        Ok(afc_client)
     }
 
     pub fn get_lockdown_client<E: LockdowndErrorTrait>(&self) -> Result<LockdowndClient, E> {
-        let device = self.get_device().expect("couldn't get the deviec");
+        let device = self.get_device();
 
         let lockdown = LockdowndClient::new(device, "deviceclient-lockdown-client")
             .map_err(|err| E::lockdown_error(err))?;
@@ -55,25 +55,24 @@ impl DeviceClient<SingleDevice> {
     }
 
     pub fn check_connected<E: DeviceNotFoundErrorTrait>(&self) -> Result<(), E> {
-        if let Some(device) = self.get_device() {
-            if let Ok(connected_devices) = idevice::get_devices() {
-                if connected_devices
-                    .iter()
-                    .any(|d| d.get_udid() == device.get_udid())
-                {
-                    return Ok(());
-                }
+        let device = self.get_device();
+
+        if let Ok(connected_devices) = idevice::get_devices() {
+            if connected_devices
+                .iter()
+                .any(|d| d.get_udid() == device.get_udid())
+            {
+                return Ok(());
             }
         }
         Err(E::device_not_found())
     }
     pub fn is_connected(&self) -> bool {
-        if let Some(device) = self.get_device() {
-            if let Ok(connected_devices) = idevice::get_devices() {
-                return connected_devices
-                    .iter()
-                    .any(|d| d.get_udid() == device.get_udid());
-            }
+        let device = self.get_device();
+        if let Ok(connected_devices) = idevice::get_devices() {
+            return connected_devices
+                .iter()
+                .any(|d| d.get_udid() == device.get_udid());
         }
         false
     }
@@ -91,8 +90,12 @@ impl DeviceClient<DeviceGroup> {
         }
     }
 
-    pub fn get_devices(&self) -> Option<&Vec<idevice::Device>> {
-        self.device.get_devices()
+    pub fn get_devices(&self) -> &Vec<idevice::Device> {
+        // this should never fail because this method only appear in a device group, thus we can
+        // get the devices
+        self.device
+            .get_devices()
+            .expect("This is a bug, please report")
     }
 }
 impl TryFrom<String> for DeviceClient {
