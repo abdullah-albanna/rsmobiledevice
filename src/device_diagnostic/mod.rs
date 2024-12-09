@@ -149,6 +149,18 @@ impl DeviceDiagnostic<DeviceGroup> {
         Ok(())
     }
 
+    pub fn query_ioreg_plane_all(
+        &self,
+        plane: IORegPlane,
+    ) -> Result<Vec<Plist>, DeviceDiagnosticError> {
+        let relaies = self._get_diagnostic_relaies()?;
+
+        Ok(relaies
+            .into_iter()
+            .map(|relay| relay.query_ioregistry_plane(plane.to_string()))
+            .collect::<Result<Vec<_>, _>>()?)
+    }
+
     pub fn query_mobilegestalt_all(
         &self,
         keys: Vec<impl Into<String>>,
