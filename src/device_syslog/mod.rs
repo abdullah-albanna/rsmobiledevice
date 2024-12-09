@@ -18,6 +18,8 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
+const DEVICE_SYSLOG_SERVICE: &str = "com.apple.syslog_relay";
+
 /// Enum for controlling logging behavior
 #[derive(Debug, Clone)]
 pub enum LoggerCommand {
@@ -61,16 +63,17 @@ impl DeviceSysLog<SingleDevice> {
         thread::spawn(move || {
             let mut current_status: LoggerCommand = LoggerCommand::StopLogging;
 
-            let device = devices_clone.get_device().unwrap();
-            let mut lockdown = devices_clone.get_lockdown_client().unwrap();
+            let device = devices_clone.get_device().expect("Could't get the device");
+            let mut lockdown = devices_clone
+                .get_lockdown_client()
+                .expect("Could't get the device lockdown");
             let lockdown_service = lockdown
-                .start_service("com.apple.syslog_relay", true)
-                .unwrap();
-            let service = ServiceClient::new(device, lockdown_service).unwrap();
+                .start_service(DEVICE_SYSLOG_SERVICE, true)
+                .expect("Could't start the syslog service");
+            let service = ServiceClient::new(device, lockdown_service)
+                .expect("Could't create a service client for syslog");
 
             loop {
-                // Listen for commands to start/stop logging
-
                 if let Ok(command) = receiver_clone.try_recv() {
                     current_status = command;
                 }
@@ -106,6 +109,14 @@ impl DeviceSysLog<SingleDevice> {
         self.filter = filter.into();
     }
 
+    pub fn log_to_custom<F>(&self, callback: F) -> Result<(), DeviceSysLogError>
+    where
+        F: Fn(LogsData) + 'static + Sync + Send,
+    {
+        self.sender.send(LoggerCommand::StartLogging)?;
+        self._start_service(callback);
+        Ok(())
+    }
     pub fn log_to_stdout(&self) -> Result<(), DeviceSysLogError> {
         self.sender.send(LoggerCommand::StartLogging)?;
         self._start_service(|logs| println!("{}", logs.get_parsed_log_colored()));
