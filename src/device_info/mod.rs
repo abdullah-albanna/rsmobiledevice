@@ -78,9 +78,12 @@ impl DeviceInfo<SingleDevice> {
         key: impl Into<String> + Copy,
         domain: DeviceDomains,
     ) -> Result<Plist, DeviceInfoError> {
-        let device = self.device.get_device().unwrap();
-        let lockdownd = device.new_lockdownd_client("rsmobiledevice-singledevice")?;
-        let output = lockdownd.get_value(key.into(), domain.as_string())?;
+        self.device.check_connected::<DeviceInfoError>()?;
+
+        let lockdownd = self.device.get_lockdown_client::<DeviceInfoError>()?;
+        let output = lockdownd
+            .get_value(key.into(), domain.as_string())
+            .map_err(DeviceInfoError::LockdowndError)?;
 
         Ok(output)
     }

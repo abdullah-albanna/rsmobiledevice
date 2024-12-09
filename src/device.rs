@@ -2,11 +2,11 @@ use rusty_libimobiledevice::{
     idevice,
     services::{afc::AfcClient, lockdownd::LockdowndClient},
 };
-use std::{marker::PhantomData, process::id};
+use std::marker::PhantomData;
 
 use crate::{
     devices_collection::{DeviceGroup, Devices, SingleDevice},
-    errors::DeviceClientError,
+    errors::{DeviceClientError, DeviceNotFoundErrorTrait, LockdowndErrorTrait},
 };
 
 #[derive(Debug, Clone)]
@@ -41,11 +41,26 @@ impl DeviceClient<SingleDevice> {
         }
     }
 
-    pub fn get_lockdown_client(&self) -> Result<LockdowndClient, DeviceClientError> {
+    pub fn get_lockdown_client<E: LockdowndErrorTrait>(&self) -> Result<LockdowndClient, E> {
         let device = self.get_device().expect("couldn't get the deviec");
 
-        let lockdown = LockdowndClient::new(device, "deviceclient-lockdown-client")?;
+        let lockdown = LockdowndClient::new(device, "deviceclient-lockdown-client")
+            .map_err(|err| E::lockdown_error(err))?;
         Ok(lockdown)
+    }
+
+    pub fn check_connected<T: DeviceNotFoundErrorTrait>(&self) -> Result<(), T> {
+        if let Some(device) = self.get_device() {
+            if let Ok(connected_devices) = idevice::get_devices() {
+                if connected_devices
+                    .iter()
+                    .any(|d| d.get_udid() == device.get_udid())
+                {
+                    return Ok(());
+                }
+            }
+        }
+        Err(T::device_not_found())
     }
     pub fn is_connected(&self) -> bool {
         if let Some(device) = self.get_device() {

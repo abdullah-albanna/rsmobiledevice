@@ -6,6 +6,14 @@ pub use crate::device_diagnostic::errors::DeviceDiagnosticError;
 pub use crate::device_info::errors::DeviceInfoError;
 pub use crate::device_syslog::errors::DeviceSysLogError;
 
+pub trait DeviceNotFoundErrorTrait {
+    fn device_not_found() -> Self;
+}
+
+pub trait LockdowndErrorTrait {
+    fn lockdown_error(error: LockdowndError) -> Self;
+}
+
 #[derive(Debug, Error)]
 pub enum DeviceClientError {
     #[error("IDevice Error: {0}")]
@@ -19,6 +27,17 @@ pub enum DeviceClientError {
 
     #[error("AFC Client Error: {0}")]
     AFCClientError(#[from] AfcError),
+}
+
+impl LockdowndErrorTrait for DeviceClientError {
+    fn lockdown_error(error: LockdowndError) -> Self {
+        Self::LockdowndError(error)
+    }
+}
+impl DeviceNotFoundErrorTrait for DeviceClientError {
+    fn device_not_found() -> Self {
+        Self::DeviceNotFound
+    }
 }
 
 #[derive(Debug, Error)]

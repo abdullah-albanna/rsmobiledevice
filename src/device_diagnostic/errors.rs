@@ -1,8 +1,7 @@
+use crate::errors::{DeviceNotFoundErrorTrait, LockdowndErrorTrait};
 use plist_plus::error::PlistError;
 use rusty_libimobiledevice::error::{DiagnosticsRelayError, LockdowndError};
 use thiserror::Error;
-
-use crate::errors::DeviceClientError;
 
 #[derive(Debug, Error)]
 pub enum DeviceDiagnosticError {
@@ -15,15 +14,24 @@ pub enum DeviceDiagnosticError {
     #[error("Couldn't start the diagnostics service, error: {0}")]
     ServiceError(String),
 
-    #[error("Device was not found")]
-    DeviceNotFound,
+    #[error("Plist error: {0}")]
+    PlistError(#[from] PlistError),
 
     #[error("Lockdownd Error: {0}")]
     LockdowndError(#[from] LockdowndError),
 
-    #[error("Device Client Error: {0}")]
-    DeviceClientError(#[from] DeviceClientError),
+    #[error("Device not found, make sure it's plugged")]
+    DeviceNotFound,
+}
 
-    #[error("Plist error: {0}")]
-    PlistError(#[from] PlistError),
+impl DeviceNotFoundErrorTrait for DeviceDiagnosticError {
+    fn device_not_found() -> Self {
+        Self::DeviceNotFound
+    }
+}
+
+impl LockdowndErrorTrait for DeviceDiagnosticError {
+    fn lockdown_error(error: LockdowndError) -> Self {
+        Self::LockdowndError(error)
+    }
 }
