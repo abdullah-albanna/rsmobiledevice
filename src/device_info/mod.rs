@@ -180,16 +180,16 @@ impl DeviceInfo<DeviceGroup> {
     ) -> Result<Vec<String>, DeviceInfoError> {
         let values = self.get_values(domain)?;
 
-        let mut selected_key_values = Vec::new();
-
-        for value in values {
-            if let Some(key) = value.get(&key.to_string()) {
-                selected_key_values.push(key.to_owned())
-            } else {
-                return Err(DeviceInfoError::KeyNotFound);
-            }
-        }
-        Ok(selected_key_values)
+        values
+            .into_iter()
+            .map(|value| {
+                value
+                    .get(&key.to_string())
+                    .cloned() // this is needed to convert the value from
+                    // &String to String
+                    .ok_or(DeviceInfoError::KeyNotFound)
+            })
+            .collect::<Result<Vec<_>, _>>()
     }
 
     pub fn get_all_values(&self) -> Result<Vec<HashMap<String, String>>, DeviceInfoError> {
