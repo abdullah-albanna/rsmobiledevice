@@ -142,37 +142,14 @@ impl DeviceInfo<DeviceGroup> {
         key: impl Into<String> + Copy,
         domain: DeviceDomains,
     ) -> Result<Vec<Plist>, DeviceInfoError> {
-        let devices = self.device.get_devices();
+        let lockdownds = self.device.get_lockdownd_clients::<DeviceInfoError>()?;
 
-        let lockdownds: Vec<Result<LockdowndClient<'_>, LockdowndError>> = devices
-            .iter()
-            .map(|device| device.new_lockdownd_client("rsmobiledevice-devicegroup"))
-            .collect();
+        let plists = lockdownds
+            .into_iter()
+            .map(|lockdownd| lockdownd.get_value(key.into(), domain.as_string()))
+            .collect::<Result<Vec<_>, _>>()?;
 
-        let mut success_lockdownds = Vec::new();
-
-        for lockdownd in lockdownds {
-            match lockdownd {
-                Ok(ld) => success_lockdownds.push(ld),
-                Err(err) => return Err(DeviceInfoError::LockdowndError(err)),
-            }
-        }
-
-        let plists: Vec<Result<Plist, LockdowndError>> = success_lockdownds
-            .iter()
-            .map(|ld| ld.get_value(key.into(), domain.as_string()))
-            .collect();
-
-        let mut success_plists = Vec::new();
-
-        for plist in plists {
-            match plist {
-                Ok(p) => success_plists.push(p),
-                Err(err) => return Err(DeviceInfoError::LockdowndError(err)),
-            }
-        }
-
-        Ok(success_plists)
+        Ok(plists)
     }
 
     pub fn get_values(
