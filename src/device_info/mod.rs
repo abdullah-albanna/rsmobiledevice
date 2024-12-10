@@ -139,14 +139,16 @@ impl DeviceInfo<SingleDevice> {
 impl DeviceInfo<DeviceGroup> {
     pub fn get_plist(
         &self,
-        key: impl Into<String> + Copy,
+        key: impl Into<String>,
         domain: DeviceDomains,
     ) -> Result<Vec<Plist>, DeviceInfoError> {
         let lockdownds = self.device.get_lockdownd_clients::<DeviceInfoError>()?;
 
+        let key = key.into();
+
         let plists = lockdownds
             .into_iter()
-            .map(|lockdownd| lockdownd.get_value(key.into(), domain.as_string()))
+            .map(|lockdownd| lockdownd.get_value(&key, domain.as_string()))
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(plists)
