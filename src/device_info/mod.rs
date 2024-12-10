@@ -132,7 +132,7 @@ impl DeviceInfo<SingleDevice> {
     }
 }
 impl DeviceInfo<DeviceGroup> {
-    pub fn get_plist(
+    pub fn get_plist_all(
         &self,
         key: impl Into<String>,
         domain: DeviceDomains,
@@ -149,7 +149,7 @@ impl DeviceInfo<DeviceGroup> {
         Ok(plists)
     }
 
-    pub fn get_values(
+    pub fn get_values_all(
         &self,
         domain: DeviceDomains,
     ) -> Result<Vec<HashMap<String, String>>, DeviceInfoError> {
@@ -173,7 +173,7 @@ impl DeviceInfo<DeviceGroup> {
         Ok(dicts)
     }
 
-    pub fn get_value(
+    pub fn get_value_all(
         &self,
         key: DeviceKeys,
         domain: DeviceDomains,
@@ -192,16 +192,16 @@ impl DeviceInfo<DeviceGroup> {
             .collect::<Result<Vec<_>, _>>()
     }
 
-    pub fn get_all_values(&self) -> Result<Vec<HashMap<String, String>>, DeviceInfoError> {
+    pub fn get_all_values_all(&self) -> Result<Vec<HashMap<String, String>>, DeviceInfoError> {
         self.get_values(DeviceDomains::All)
     }
 
-    pub fn get_product_type(&self) -> Vec<String> {
+    pub fn get_product_type_all(&self) -> Vec<String> {
         self.get_value(DeviceKeys::ProductType, DeviceDomains::All)
             .expect("Couldn't get the product type, this is a bug")
     }
 
-    pub fn get_product_version(&self) -> Vec<String> {
+    pub fn get_product_version_all(&self) -> Vec<String> {
         self.get_value(DeviceKeys::ProductType, DeviceDomains::All)
             .expect("Couldn't get the product version, this is a bug")
     }
