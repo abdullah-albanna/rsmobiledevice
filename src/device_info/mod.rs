@@ -13,11 +13,6 @@ use errors::DeviceInfoError;
 use keys::DeviceKeys;
 use plist_plus::Plist;
 
-use rusty_libimobiledevice;
-
-use rusty_libimobiledevice::error::LockdowndError;
-use rusty_libimobiledevice::services::lockdownd::LockdowndClient;
-
 #[derive(Debug)]
 pub struct DeviceInfo<T> {
     device: DeviceClient<T>,
@@ -157,10 +152,10 @@ impl DeviceInfo<DeviceGroup> {
     pub fn get_values(
         &self,
         domain: DeviceDomains,
-    ) -> Result<HashMap<u32, HashMap<String, String>>, DeviceInfoError> {
-        let mut dicts: HashMap<u32, HashMap<String, String>> = HashMap::new();
+    ) -> Result<Vec<HashMap<String, String>>, DeviceInfoError> {
+        let mut dicts: Vec<HashMap<String, String>> = Vec::new();
 
-        for (i, plist) in self.get_plist("", domain)?.into_iter().enumerate() {
+        for plist in self.get_plist("", domain)?.into_iter() {
             let mut device_dict = HashMap::new();
             for line in plist {
                 device_dict.insert(
@@ -172,7 +167,7 @@ impl DeviceInfo<DeviceGroup> {
                 );
             }
 
-            dicts.insert((i + 1) as u32, device_dict);
+            dicts.push(device_dict);
         }
 
         Ok(dicts)
@@ -187,7 +182,7 @@ impl DeviceInfo<DeviceGroup> {
 
         let mut selected_key_values = Vec::new();
 
-        for value in values.values() {
+        for value in values {
             if let Some(key) = value.get(&key.to_string()) {
                 selected_key_values.push(key.to_owned())
             } else {
@@ -197,7 +192,7 @@ impl DeviceInfo<DeviceGroup> {
         Ok(selected_key_values)
     }
 
-    pub fn get_all_values(&self) -> Result<HashMap<u32, HashMap<String, String>>, DeviceInfoError> {
+    pub fn get_all_values(&self) -> Result<Vec<HashMap<String, String>>, DeviceInfoError> {
         self.get_values(DeviceDomains::All)
     }
 
