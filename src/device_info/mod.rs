@@ -47,7 +47,7 @@ impl Display for DeviceInfo<DeviceGroup> {
         let mut text = String::new();
 
         let plists = self
-            .get_plist("", DeviceDomains::All)
+            .get_plist_all("", DeviceDomains::All)
             .expect("Couldn't display device info");
 
         for (i, plist) in plists.into_iter().enumerate() {
@@ -155,7 +155,7 @@ impl DeviceInfo<DeviceGroup> {
     ) -> Result<Vec<HashMap<String, String>>, DeviceInfoError> {
         let mut dicts: Vec<HashMap<String, String>> = Vec::new();
 
-        for plist in self.get_plist("", domain)?.into_iter() {
+        for plist in self.get_plist_all("", domain)?.into_iter() {
             let mut device_dict = HashMap::new();
             for line in plist {
                 device_dict.insert(
@@ -178,7 +178,7 @@ impl DeviceInfo<DeviceGroup> {
         key: DeviceKeys,
         domain: DeviceDomains,
     ) -> Result<Vec<String>, DeviceInfoError> {
-        let values = self.get_values(domain)?;
+        let values = self.get_values_all(domain)?;
 
         values
             .into_iter()
@@ -193,16 +193,16 @@ impl DeviceInfo<DeviceGroup> {
     }
 
     pub fn get_all_values_all(&self) -> Result<Vec<HashMap<String, String>>, DeviceInfoError> {
-        self.get_values(DeviceDomains::All)
+        self.get_values_all(DeviceDomains::All)
     }
 
     pub fn get_product_type_all(&self) -> Vec<String> {
-        self.get_value(DeviceKeys::ProductType, DeviceDomains::All)
+        self.get_value_all(DeviceKeys::ProductType, DeviceDomains::All)
             .expect("Couldn't get the product type, this is a bug")
     }
 
     pub fn get_product_version_all(&self) -> Vec<String> {
-        self.get_value(DeviceKeys::ProductType, DeviceDomains::All)
+        self.get_value_all(DeviceKeys::ProductType, DeviceDomains::All)
             .expect("Couldn't get the product version, this is a bug")
     }
 }
