@@ -1,11 +1,11 @@
 use rusty_libimobiledevice::idevice::Device;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SingleDevice();
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DeviceGroup();
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Devices {
     Single(Device),
     Multiple(Vec<Device>),
