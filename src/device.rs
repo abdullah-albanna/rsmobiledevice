@@ -6,6 +6,10 @@ use rusty_libimobiledevice::{
 use std::marker::PhantomData;
 
 use crate::{
+    device_diagnostic::DeviceDiagnostic,
+    device_info::DeviceInfo,
+    device_installer::DeviceInstaller,
+    device_syslog::DeviceSysLog,
     devices_collection::{DeviceGroup, Devices, SingleDevice},
     errors::{
         AFCClientErrorTrait, DeviceClientError, DeviceNotFoundErrorTrait, LockdowndErrorTrait,
@@ -30,6 +34,18 @@ impl DeviceClient {
 }
 
 impl DeviceClient<SingleDevice> {
+    pub fn get_device_info(self) -> DeviceInfo<SingleDevice> {
+        DeviceInfo::new(self)
+    }
+    pub fn get_device_diagnostic(self) -> DeviceDiagnostic<SingleDevice> {
+        DeviceDiagnostic::new(self)
+    }
+    pub fn get_device_syslog(self) -> DeviceSysLog<SingleDevice> {
+        DeviceSysLog::new(self)
+    }
+    pub fn get_device_installer(self) -> DeviceInstaller<SingleDevice> {
+        DeviceInstaller::new(self)
+    }
     pub fn get_device(&self) -> &idevice::Device {
         // this should never fail because this method only appear in a single device, thus we can
         // get the device
