@@ -127,7 +127,7 @@ impl DeviceInfo<SingleDevice> {
     }
 
     pub fn get_product_version(&self) -> String {
-        self.get_value(DeviceKeys::ProductType, DeviceDomains::All)
+        self.get_value(DeviceKeys::ProductVersion, DeviceDomains::All)
             .expect("Couldn't get the product version, this is a bug")
     }
 }
@@ -202,7 +202,7 @@ impl DeviceInfo<DeviceGroup> {
     }
 
     pub fn get_product_version_all(&self) -> Vec<String> {
-        self.get_value_all(DeviceKeys::ProductType, DeviceDomains::All)
+        self.get_value_all(DeviceKeys::ProductVersion, DeviceDomains::All)
             .expect("Couldn't get the product version, this is a bug")
     }
 }
