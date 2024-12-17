@@ -31,8 +31,8 @@ impl Display for DeviceInfo<SingleDevice> {
             text.push_str(
                 format!(
                     "{}: {}\n",
-                    line.key.unwrap(),
-                    line.plist.get_display_value().unwrap()
+                    line.key.unwrap_or("unknown".into()),
+                    line.plist.get_display_value().unwrap_or("unknown".into())
                 )
                 .as_str(),
             );
@@ -56,8 +56,8 @@ impl Display for DeviceInfo<DeviceGroup> {
                 text.push_str(
                     format!(
                         "\t{}: {}\n",
-                        line.key.unwrap(),
-                        line.plist.get_display_value().unwrap()
+                        line.key.unwrap_or("unknown".into()),
+                        line.plist.get_display_value().unwrap_or("unknown".into())
                     )
                     .as_str(),
                 );
