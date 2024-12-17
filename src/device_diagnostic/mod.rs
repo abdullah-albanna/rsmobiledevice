@@ -93,6 +93,28 @@ impl DeviceDiagnostic<SingleDevice> {
         let relay = self._get_diagnostic_relay()?;
         Ok(relay.request_diagnostics(r#type.to_string())?)
     }
+    pub fn get_battery_plist(&self) -> Result<Plist, DeviceDiagnosticError> {
+        let device = self.device.clone();
+        let is_old = device
+            .get_device_info()
+            .get_product_type()
+            .strip_prefix("iPhone")
+            .unwrap_or("0,0")
+            .split(",")
+            .next()
+            .unwrap_or("0")
+            .parse::<u32>()
+            .unwrap_or(0)
+            <= 7;
+
+        if is_old {
+            // this only applies for iPhone 7 and older
+            // https://github.com/libimobiledevice/libimobiledevice/issues/1095#issuecomment-750486027
+            self.query_ioregentry_key("AppleARMPMUCharger")
+        } else {
+            self.query_ioregentry_key("AppleSmartBattery")
+        }
+    }
     pub fn sleep(&self) -> Result<(), DeviceDiagnosticError> {
         self._device_power_action(DevicePowerAction::Sleep)
     }
