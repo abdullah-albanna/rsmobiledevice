@@ -7,7 +7,7 @@ pub mod device_installer;
 pub mod device_syslog;
 pub mod errors;
 
-mod devices_collection;
+pub mod devices_collection;
 
 pub trait RecursiveFind {
     fn rfind(&self, key: &str) -> Option<String>;
