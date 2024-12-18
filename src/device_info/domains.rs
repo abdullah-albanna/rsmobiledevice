@@ -1,5 +1,28 @@
 pub enum DeviceDomains {
-    Mobile(MobileDomains),
+    MobileDebug,
+    MobileChaperone,
+    MobileThirdPartyTermination,
+    MobileBattery,
+    MobileLockdownd,
+    MobileLockdownCache,
+    MobileDataSync,
+    MobileTetheredSync,
+    MobileMobileApplicationUsage,
+    MobileBackup,
+    MobileNikita,
+    MobileRestriction,
+    MobileUserPreferences,
+    MobileSyncDataClass,
+    MobileSoftwareBehavior,
+    MobileITunesSQLMusicLibraryPostProcessCommands,
+    MobileITunesAccessories,
+    MobileITunesStore,
+    MobileITunesITunes,
+    MobileInternal,
+    MobileWirelessLockdown,
+    DiskUsage,
+    DiskUsageFactory,
+    Iqagent,
     FMIP,
     Accessibility,
     ITunes,
@@ -8,92 +31,51 @@ pub enum DeviceDomains {
     PurpleBuddy2,
     XCode,
     International,
-    Iqagent,
     All,
-}
-
-pub enum MobileDomains {
-    Debug,
-    Chaperone,
-    ThirdPartyTermination,
-    Lockdown,
-    LockdownCache,
-    DataSync,
-    TetheredSync,
-    MobileApplicationUsage,
-    Backup,
-    Nikita,
-    Restriction,
-    UserPreferences,
-    SyncDataClass,
-    SoftwareBehavior,
-    ITunes(ITunesDomains),
-    Internal,
-    WirelessLockdown,
-}
-
-pub enum ITunesDomains {
-    SQLMusicLibraryPostProcessCommands,
-    Accessories,
-    Store,
-    ITunes,
 }
 
 impl DeviceDomains {
     pub fn as_string(&self) -> String {
         match self {
-            DeviceDomains::All => "".to_string(),
-            DeviceDomains::Mobile(domain) => domain.as_string(),
-            DeviceDomains::FMIP => "com.apple.fmip".to_string(),
-            DeviceDomains::Accessibility => "com.apple.Accessibility".to_string(),
-            DeviceDomains::ITunes => "com.apple.iTunes".to_string(),
-            DeviceDomains::Fairplay => "com.apple.fairplay".to_string(),
-            DeviceDomains::PurpleBuddy => "com.apple.purplebuddy".to_string(),
-            DeviceDomains::PurpleBuddy2 => "com.apple.PurpleBuddy".to_string(),
-            DeviceDomains::XCode => "com.apple.xcode.developerdomain".to_string(),
-            DeviceDomains::International => "com.apple.international".to_string(),
-            DeviceDomains::Iqagent => "com.apple.iqagent".to_string(),
-        }
-    }
-}
-
-impl MobileDomains {
-    pub fn as_string(&self) -> String {
-        match self {
-            MobileDomains::Debug => "com.apple.mobile.debug".to_string(),
-            MobileDomains::Chaperone => "com.apple.mobile.chaperone".to_string(),
-            MobileDomains::ThirdPartyTermination => {
-                "com.apple.mobile.third_party_termination".to_string()
+            DeviceDomains::All => "".into(),
+            DeviceDomains::DiskUsage => "com.apple.disk_usage".into(),
+            DeviceDomains::DiskUsageFactory => "com.apple.disk_usage.factory".into(),
+            DeviceDomains::Iqagent => "".into(),
+            DeviceDomains::FMIP => "com.apple.fmip".into(),
+            DeviceDomains::Accessibility => "com.apple.Accessibility".into(),
+            DeviceDomains::ITunes => "com.apple.iTunes".into(),
+            DeviceDomains::Fairplay => "com.apple.fairplay".into(),
+            DeviceDomains::PurpleBuddy => "com.apple.purplebuddy".into(),
+            DeviceDomains::PurpleBuddy2 => "com.apple.PurpleBuddy".into(),
+            DeviceDomains::XCode => "com.apple.xcode.developerdomain".into(),
+            DeviceDomains::International => "com.apple.international".into(),
+            DeviceDomains::MobileDebug => "com.apple.mobile.debug".into(),
+            DeviceDomains::MobileChaperone => "com.apple.mobile.chaperone".into(),
+            DeviceDomains::MobileThirdPartyTermination => {
+                "com.apple.mobile.third_party_termination".into()
             }
-            MobileDomains::Lockdown => "com.apple.mobile.lockdownd".to_string(),
-            MobileDomains::LockdownCache => "com.apple.mobile.lockdown_cache".to_string(),
-            MobileDomains::DataSync => "com.apple.mobile.data_sync".to_string(),
-            MobileDomains::TetheredSync => "com.apple.mobile.tethered_sync".to_string(),
-            MobileDomains::MobileApplicationUsage => {
-                "com.apple.mobile.mobile_application_usage".to_string()
+            DeviceDomains::MobileBattery => "com.apple.mobile.battery".into(),
+            DeviceDomains::MobileLockdownd => "com.apple.mobile.lockdownd".into(),
+            DeviceDomains::MobileLockdownCache => "com.apple.mobile.lockdown_cache".into(),
+            DeviceDomains::MobileDataSync => "com.apple.mobile.data_sync".into(),
+            DeviceDomains::MobileTetheredSync => "com.apple.mobile.tethered_sync".into(),
+            DeviceDomains::MobileMobileApplicationUsage => {
+                "com.apple.mobile.mobile_application_usage".into()
             }
-            MobileDomains::Backup => "com.apple.mobile.backup".to_string(),
-            MobileDomains::Nikita => "com.apple.mobile.nikita".to_string(),
-            MobileDomains::Restriction => "com.apple.mobile.restriction".to_string(),
-            MobileDomains::UserPreferences => "com.apple.mobile.user_preferences".to_string(),
-            MobileDomains::SyncDataClass => "com.apple.mobile.sync_data_class".to_string(),
-            MobileDomains::SoftwareBehavior => "com.apple.mobile.software_behavior".to_string(),
-            MobileDomains::ITunes(domain) => domain.as_string(),
-            MobileDomains::Internal => "com.apple.mobile.internal".to_string(),
-            MobileDomains::WirelessLockdown => "com.apple.mobile.wireless_lockdown".to_string(),
-        }
-    }
-}
-
-impl ITunesDomains {
-    pub fn as_string(&self) -> String {
-        match self {
-            ITunesDomains::SQLMusicLibraryPostProcessCommands => {
-                "com.apple.mobile.iTunes.SQLMusicLibraryPostProcessCommands".to_string()
+            DeviceDomains::MobileBackup => "com.apple.mobile.backup".into(),
+            DeviceDomains::MobileNikita => "com.apple.mobile.nikita".into(),
+            DeviceDomains::MobileRestriction => "com.apple.mobile.restriction".into(),
+            DeviceDomains::MobileUserPreferences => "com.apple.mobile.user_preferences".into(),
+            DeviceDomains::MobileSyncDataClass => "com.apple.mobile.sync_data_class".into(),
+            DeviceDomains::MobileSoftwareBehavior => "com.apple.mobile.software_behavior".into(),
+            DeviceDomains::MobileInternal => "com.apple.mobile.internal".into(),
+            DeviceDomains::MobileWirelessLockdown => "com.apple.mobile.wireless_lockdown".into(),
+            DeviceDomains::MobileITunesSQLMusicLibraryPostProcessCommands => {
+                "com.apple.mobile.iTunes.SQLMusicLibraryPostProcessCommands".into()
             }
-            ITunesDomains::Accessories => "com.apple.mobile.iTunes.accessories".to_string(),
-            ITunesDomains::Store => "com.apple.mobile.iTunes.store".to_string(),
-            ITunesDomains::ITunes => "com.apple.mobile.iTunes".to_string(),
+            DeviceDomains::MobileITunesAccessories => "com.apple.mobile.iTunes.accessories".into(),
+            DeviceDomains::MobileITunesStore => "com.apple.mobile.iTunes.store".into(),
+            DeviceDomains::MobileITunesITunes => "com.apple.mobile.iTunes".into(),
         }
     }
 }
