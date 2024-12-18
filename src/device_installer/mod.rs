@@ -24,8 +24,8 @@ const IPCC_REMOTE_FOLDER: &str = "rsmobiledevice.ipcc";
 const IPA_REMOTE_FILE: &str = "rsmobiledevice.ipa";
 
 #[derive(Debug)]
-pub struct DeviceInstaller<T> {
-    device: DeviceClient<T>,
+pub struct DeviceInstaller<'a, T> {
+    device: &'a DeviceClient<T>,
     _p: PhantomData<T>,
 }
 
@@ -47,7 +47,7 @@ impl Display for PackageType {
     }
 }
 
-impl DeviceInstaller<SingleDevice> {
+impl DeviceInstaller<'_, SingleDevice> {
     pub fn install_from_path<S>(
         &self,
         package_path: &S,
@@ -276,8 +276,8 @@ impl DeviceInstaller<SingleDevice> {
     }
 }
 
-impl<T> DeviceInstaller<T> {
-    pub fn new(device: DeviceClient<T>) -> DeviceInstaller<T> {
+impl<'a, T> DeviceInstaller<'a, T> {
+    pub fn new(device: &'a DeviceClient<T>) -> DeviceInstaller<'a, T> {
         DeviceInstaller {
             device,
             _p: PhantomData::<T>,

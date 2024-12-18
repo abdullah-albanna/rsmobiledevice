@@ -14,12 +14,12 @@ use keys::DeviceKeys;
 use plist_plus::Plist;
 
 #[derive(Debug)]
-pub struct DeviceInfo<T> {
-    device: DeviceClient<T>,
+pub struct DeviceInfo<'a, T> {
+    device: &'a DeviceClient<T>,
     _p: PhantomData<T>,
 }
 
-impl Display for DeviceInfo<SingleDevice> {
+impl Display for DeviceInfo<'_, SingleDevice> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut text = String::new();
 
@@ -42,7 +42,7 @@ impl Display for DeviceInfo<SingleDevice> {
     }
 }
 
-impl Display for DeviceInfo<DeviceGroup> {
+impl Display for DeviceInfo<'_, DeviceGroup> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut text = String::new();
 
@@ -67,7 +67,7 @@ impl Display for DeviceInfo<DeviceGroup> {
         write!(f, "{}", text)
     }
 }
-impl DeviceInfo<SingleDevice> {
+impl DeviceInfo<'_, SingleDevice> {
     pub fn get_plist(
         &self,
         key: impl Into<String> + Copy,
@@ -131,7 +131,7 @@ impl DeviceInfo<SingleDevice> {
             .expect("Couldn't get the product version, this is a bug")
     }
 }
-impl DeviceInfo<DeviceGroup> {
+impl DeviceInfo<'_, DeviceGroup> {
     pub fn get_plist_all(
         &self,
         key: impl Into<String>,
@@ -207,8 +207,8 @@ impl DeviceInfo<DeviceGroup> {
     }
 }
 
-impl<T> DeviceInfo<T> {
-    pub fn new(device: DeviceClient<T>) -> DeviceInfo<T> {
+impl<'a, T> DeviceInfo<'a, T> {
+    pub fn new(device: &'a DeviceClient<T>) -> DeviceInfo<'a, T> {
         DeviceInfo {
             device,
             _p: PhantomData::<T>,

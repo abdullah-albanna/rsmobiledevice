@@ -47,6 +47,16 @@ impl<T> DeviceSysLog<T> {
             _phantom: std::marker::PhantomData::<T>,
         }
     }
+    pub fn new_from_arc(devices: Arc<DeviceClient<T>>) -> DeviceSysLog<T> {
+        let (tx, rx) = unbounded();
+        DeviceSysLog {
+            devices,
+            sender: tx,
+            receiver: Arc::new(rx),
+            filter: Arc::new(LogFilter::Nothing),
+            _phantom: std::marker::PhantomData::<T>,
+        }
+    }
 }
 
 impl DeviceSysLog<SingleDevice> {
@@ -66,7 +76,7 @@ impl DeviceSysLog<SingleDevice> {
             let device = devices_clone.get_device();
             let mut lockdownd = devices_clone
                 .get_lockdownd_client::<DeviceSysLogError>()
-                .expect("Could't get the device lockdownd");
+                .expect("Could't get the device lockdown");
             let lockdownd_service = lockdownd
                 .start_service(DEVICE_SYSLOG_SERVICE, true)
                 .expect("Could't start the syslog service");

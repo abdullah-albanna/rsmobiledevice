@@ -20,20 +20,20 @@ const DIAGNOSTICS_RELAY_SERVICE: &str = "com.apple.mobile.diagnostics_relay";
 const DIAGNOSTICS_RELAY_SERVICE_OLD: &str = "com.apple.iosdiagnostics.relay";
 
 #[derive(Debug)]
-pub struct DeviceDiagnostic<T> {
-    device: DeviceClient<T>,
+pub struct DeviceDiagnostic<'a, T> {
+    device: &'a DeviceClient<T>,
     _phantom: PhantomData<T>,
 }
 
-impl<T> DeviceDiagnostic<T> {
-    pub fn new(device: DeviceClient<T>) -> DeviceDiagnostic<T> {
+impl<'a, T> DeviceDiagnostic<'a, T> {
+    pub fn new(device: &'a DeviceClient<T>) -> DeviceDiagnostic<'a, T> {
         DeviceDiagnostic {
             device,
             _phantom: PhantomData::<T>,
         }
     }
 }
-impl DeviceDiagnostic<SingleDevice> {
+impl DeviceDiagnostic<'_, SingleDevice> {
     fn _get_diagnostic_relay(&self) -> Result<DiagnosticsRelay, DeviceDiagnosticError> {
         let device = self.device.get_device();
 
@@ -126,7 +126,7 @@ impl DeviceDiagnostic<SingleDevice> {
     }
 }
 
-impl DeviceDiagnostic<DeviceGroup> {
+impl DeviceDiagnostic<'_, DeviceGroup> {
     fn _get_diagnostic_relaies(&self) -> Result<Vec<DiagnosticsRelay>, DeviceDiagnosticError> {
         let devices = self.device.get_devices();
 

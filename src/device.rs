@@ -34,16 +34,16 @@ impl DeviceClient {
 }
 
 impl DeviceClient<SingleDevice> {
-    pub fn get_device_info(self) -> DeviceInfo<SingleDevice> {
+    pub fn get_device_info(&self) -> DeviceInfo<'_, SingleDevice> {
         DeviceInfo::new(self)
     }
-    pub fn get_device_diagnostic(self) -> DeviceDiagnostic<SingleDevice> {
+    pub fn get_device_diagnostic(&self) -> DeviceDiagnostic<'_, SingleDevice> {
         DeviceDiagnostic::new(self)
     }
     pub fn get_device_syslog(self) -> DeviceSysLog<SingleDevice> {
         DeviceSysLog::new(self)
     }
-    pub fn get_device_installer(self) -> DeviceInstaller<SingleDevice> {
+    pub fn get_device_installer(&self) -> DeviceInstaller<'_, SingleDevice> {
         DeviceInstaller::new(self)
     }
     pub fn get_device(&self) -> &idevice::Device {
