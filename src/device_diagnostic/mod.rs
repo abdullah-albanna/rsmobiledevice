@@ -95,7 +95,7 @@ impl DeviceDiagnostic<'_, SingleDevice> {
     }
     pub fn get_battery_plist(&self) -> Result<Plist, DeviceDiagnosticError> {
         let device = self.device.clone();
-        let is_old = device
+        let product_version = device
             .get_device_info()
             .get_product_type()
             .strip_prefix("iPhone")
@@ -104,10 +104,9 @@ impl DeviceDiagnostic<'_, SingleDevice> {
             .next()
             .unwrap_or("0")
             .parse::<u32>()
-            .unwrap_or(0)
-            <= 7;
+            .unwrap_or(0);
 
-        if is_old {
+        if product_version <= 9 {
             // this only applies for iPhone 7 and older
             // https://github.com/libimobiledevice/libimobiledevice/issues/1095#issuecomment-750486027
             self.query_ioregentry_key("AppleARMPMUCharger")
