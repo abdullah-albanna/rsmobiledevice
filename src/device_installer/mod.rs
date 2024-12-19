@@ -227,19 +227,17 @@ impl DeviceInstaller<'_, SingleDevice> {
         Ok(())
     }
     fn get_bundle_id(&self, file: &File) -> Result<String, DeviceInstallerError> {
-        let mut zip_file = ZipArchive::new(file).unwrap();
+        let mut zip_file = ZipArchive::new(file)?;
 
         let mut bundle_id = String::new();
 
         for i in 0..zip_file.len() {
             let mut file = zip_file.by_index(i)?;
-            let inner_file_path = file.enclosed_name();
 
-            if inner_file_path.is_none() {
-                continue;
-            }
-
-            let inner_file_path = inner_file_path.unwrap();
+            let inner_file_path = match file.enclosed_name() {
+                Some(path) => path,
+                None => continue,
+            };
 
             for path in inner_file_path.iter() {
                 if path.to_str() == Some("Info.plist")

@@ -142,23 +142,31 @@ impl DeviceSysLog<SingleDevice> {
 
         self._start_service(move |logs| {
             // resolved path, just in case
-            let resolved_path = fs::canonicalize(&file_path).unwrap_or_default();
-
+            let resolved_path = match fs::canonicalize(&file_path) {
+                Ok(path) => path,
+                Err(_) => {
+                    eprintln!("Failed to resolve file path: {}", file_path.display());
+                    file_path.to_owned()
+                }
+            };
             let mut file = match OpenOptions::new()
                 .append(true)
                 .create(true)
-                .open(resolved_path)
+                .open(&resolved_path)
             {
                 Ok(file) => file,
-                Err(_) => {
-                    // Fallback to temp.log if the file cannot be opened or created
-                    eprintln!("Failed to open log file, using default temp.log");
-                    File::create("temp.log").unwrap()
+                Err(e) => {
+                    eprintln!(
+                        "Critical error: Failed to open log file at {:?}: {}",
+                        resolved_path, e
+                    );
+                    return;
                 }
             };
 
             if let Err(e) = file.write_all(logs.get_parsed_log().as_bytes()) {
                 eprintln!("Error writing to file: {}", e);
+                return;
             }
 
             if let Err(e) = file.flush() {

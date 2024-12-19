@@ -1,4 +1,3 @@
-use core::panic;
 use rusty_libimobiledevice::{
     idevice,
     services::{afc::AfcClient, lockdownd::LockdowndClient},
@@ -51,10 +50,13 @@ impl DeviceClient<SingleDevice> {
         // get the device
         self.device
             .get_device()
-            .expect("This is a bug, please report")
+            .expect("Couldn't get the device, this is a bug, please report")
     }
 
-    pub fn get_afc_client<E: AFCClientErrorTrait>(&self) -> Result<AfcClient, E> {
+    pub fn get_afc_client<E: AFCClientErrorTrait + DeviceNotFoundErrorTrait>(
+        &self,
+    ) -> Result<AfcClient, E> {
+        self.check_connected()?;
         let device = self.get_device();
 
         let afc_client = AfcClient::start_service(device, "rsmobiledevice-afc_client")
@@ -63,7 +65,10 @@ impl DeviceClient<SingleDevice> {
         Ok(afc_client)
     }
 
-    pub fn get_lockdownd_client<E: LockdowndErrorTrait>(&self) -> Result<LockdowndClient, E> {
+    pub fn get_lockdownd_client<E: LockdowndErrorTrait + DeviceNotFoundErrorTrait>(
+        &self,
+    ) -> Result<LockdowndClient, E> {
+        self.check_connected()?;
         let device = self.get_device();
 
         let lockdownd = LockdowndClient::new(device, "deviceclient-lockdownd-client")
@@ -97,15 +102,15 @@ impl DeviceClient<SingleDevice> {
 }
 
 impl DeviceClient<DeviceGroup> {
-    pub fn get_first_device(self) -> DeviceClient<SingleDevice> {
-        let Devices::Multiple(device) = self.device else {
-            panic!("This is a big, please report")
-        };
+    pub fn get_first_device(self) -> Option<DeviceClient<SingleDevice>> {
+        let devices = self.get_devices();
 
-        DeviceClient {
-            device: Devices::Single(device.first().unwrap().clone()),
-            _p: PhantomData::<SingleDevice>,
-        }
+        devices.first().map(|first_device| {
+            Some(DeviceClient {
+                device: Devices::Single(first_device.to_owned()),
+                _p: PhantomData::<SingleDevice>,
+            })
+        })?
     }
 
     pub fn get_devices(&self) -> &Vec<idevice::Device> {
@@ -113,10 +118,13 @@ impl DeviceClient<DeviceGroup> {
         // get the devices
         self.device
             .get_devices()
-            .expect("This is a bug, please report")
+            .expect("Couldn't get the devices, this is a bug, please report")
     }
 
-    pub fn get_afc_clients<E: AFCClientErrorTrait>(&self) -> Result<Vec<AfcClient>, E> {
+    pub fn get_afc_clients<E: AFCClientErrorTrait + DeviceNotFoundErrorTrait>(
+        &self,
+    ) -> Result<Vec<AfcClient>, E> {
+        self.check_all_connected()?;
         self.get_devices()
             .iter()
             .map(|device| {
@@ -126,7 +134,10 @@ impl DeviceClient<DeviceGroup> {
             .collect()
     }
 
-    pub fn get_lockdownd_clients<E: LockdowndErrorTrait>(&self) -> Result<Vec<LockdowndClient>, E> {
+    pub fn get_lockdownd_clients<E: LockdowndErrorTrait + DeviceNotFoundErrorTrait>(
+        &self,
+    ) -> Result<Vec<LockdowndClient>, E> {
+        self.check_all_connected()?;
         self.get_devices()
             .iter()
             .map(|device| {
