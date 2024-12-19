@@ -56,6 +56,7 @@ impl DeviceInstaller<'_, SingleDevice> {
     where
         S: AsRef<OsStr> + ?Sized,
     {
+        self.device.check_connected::<DeviceInstallerError>()?;
         let file = fs::File::open(Path::new(package_path.as_ref()))?;
 
         self._install_package(&file, options)
@@ -66,6 +67,7 @@ impl DeviceInstaller<'_, SingleDevice> {
         package_file: &File,
         options: Option<HashMap<&str, &str>>,
     ) -> Result<(), DeviceInstallerError> {
+        self.device.check_connected::<DeviceInstallerError>()?;
         self._install_package(package_file, options)
     }
 

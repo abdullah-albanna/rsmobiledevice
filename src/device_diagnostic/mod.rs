@@ -61,6 +61,7 @@ impl DeviceDiagnostic<'_, SingleDevice> {
     }
 
     pub fn query_ioreg_plane(&self, plane: IORegPlane) -> Result<Plist, DeviceDiagnosticError> {
+        self.device.check_connected::<DeviceDiagnosticError>()?;
         let relay = self._get_diagnostic_relay()?;
         Ok(relay.query_ioregistry_plane(plane.to_string())?)
     }
@@ -69,6 +70,7 @@ impl DeviceDiagnostic<'_, SingleDevice> {
         &self,
         key: impl Into<String>,
     ) -> Result<Plist, DeviceDiagnosticError> {
+        self.device.check_connected::<DeviceDiagnosticError>()?;
         let relay = self._get_diagnostic_relay()?;
         Ok(relay.query_ioregistry_entry(key, "")?)
     }
@@ -77,6 +79,7 @@ impl DeviceDiagnostic<'_, SingleDevice> {
         &self,
         keys: Vec<impl Into<String>>,
     ) -> Result<Plist, DeviceDiagnosticError> {
+        self.device.check_connected::<DeviceDiagnosticError>()?;
         let relay = self._get_diagnostic_relay()?;
         let mut plist = Plist::new_array();
 
@@ -90,14 +93,17 @@ impl DeviceDiagnostic<'_, SingleDevice> {
         &self,
         r#type: DiagnosticType,
     ) -> Result<Plist, DeviceDiagnosticError> {
+        self.device.check_connected::<DeviceDiagnosticError>()?;
         let relay = self._get_diagnostic_relay()?;
         Ok(relay.request_diagnostics(r#type.to_string())?)
     }
     pub fn get_battery_plist(&self) -> Result<Plist, DeviceDiagnosticError> {
+        self.device.check_connected::<DeviceDiagnosticError>()?;
         let device = self.device.clone();
         let product_version = device
             .get_device_info()
             .get_product_type()
+            .map_err(|_| DeviceDiagnosticError::DeviceNotFound)?
             .strip_prefix("iPhone")
             .unwrap_or("0,0")
             .split(",")
@@ -115,12 +121,15 @@ impl DeviceDiagnostic<'_, SingleDevice> {
         }
     }
     pub fn sleep(&self) -> Result<(), DeviceDiagnosticError> {
+        self.device.check_connected::<DeviceDiagnosticError>()?;
         self._device_power_action(DevicePowerAction::Sleep)
     }
     pub fn restart(&self, flag: DiagnosticBehavior) -> Result<(), DeviceDiagnosticError> {
+        self.device.check_connected::<DeviceDiagnosticError>()?;
         self._device_power_action(DevicePowerAction::Restart(flag))
     }
     pub fn shutdown(&self, flag: DiagnosticBehavior) -> Result<(), DeviceDiagnosticError> {
+        self.device.check_connected::<DeviceDiagnosticError>()?;
         self._device_power_action(DevicePowerAction::Shutdown(flag))
     }
 }
@@ -174,6 +183,7 @@ impl DeviceDiagnostic<'_, DeviceGroup> {
         &self,
         plane: IORegPlane,
     ) -> Result<Vec<Plist>, DeviceDiagnosticError> {
+        self.device.check_all_connected::<DeviceDiagnosticError>()?;
         let relaies = self._get_diagnostic_relaies()?;
 
         Ok(relaies
@@ -186,6 +196,7 @@ impl DeviceDiagnostic<'_, DeviceGroup> {
         &self,
         keys: Vec<impl Into<String>>,
     ) -> Result<Vec<Plist>, DeviceDiagnosticError> {
+        self.device.check_all_connected::<DeviceDiagnosticError>()?;
         let relaies = self._get_diagnostic_relaies()?;
         let mut plist = Plist::new_array();
 
@@ -207,6 +218,7 @@ impl DeviceDiagnostic<'_, DeviceGroup> {
         &self,
         key: impl Into<String>,
     ) -> Result<Vec<Plist>, DeviceDiagnosticError> {
+        self.device.check_all_connected::<DeviceDiagnosticError>()?;
         let relaies = self._get_diagnostic_relaies()?;
 
         let key: String = key.into();
@@ -221,6 +233,7 @@ impl DeviceDiagnostic<'_, DeviceGroup> {
         &self,
         r#type: DiagnosticType,
     ) -> Result<Vec<Plist>, DeviceDiagnosticError> {
+        self.device.check_all_connected::<DeviceDiagnosticError>()?;
         let relaies = self._get_diagnostic_relaies()?;
 
         Ok(relaies
@@ -230,12 +243,15 @@ impl DeviceDiagnostic<'_, DeviceGroup> {
     }
 
     pub fn sleep_all(&self) -> Result<(), DeviceDiagnosticError> {
+        self.device.check_all_connected::<DeviceDiagnosticError>()?;
         self._devices_power_action(DevicePowerAction::Sleep)
     }
     pub fn restart_all(&self, flag: DiagnosticBehavior) -> Result<(), DeviceDiagnosticError> {
+        self.device.check_all_connected::<DeviceDiagnosticError>()?;
         self._devices_power_action(DevicePowerAction::Restart(flag))
     }
     pub fn shutdown_all(&self, flag: DiagnosticBehavior) -> Result<(), DeviceDiagnosticError> {
+        self.device.check_all_connected::<DeviceDiagnosticError>()?;
         self._devices_power_action(DevicePowerAction::Shutdown(flag))
     }
 }

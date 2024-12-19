@@ -87,6 +87,7 @@ impl DeviceInfo<'_, SingleDevice> {
         &self,
         domain: DeviceDomains,
     ) -> Result<HashMap<String, String>, DeviceInfoError> {
+        self.device.check_connected::<DeviceInfoError>()?;
         let mut dict: HashMap<String, String> = HashMap::new();
 
         let output = self.get_plist("", domain)?;
@@ -108,6 +109,7 @@ impl DeviceInfo<'_, SingleDevice> {
         key: DeviceKeys,
         domain: DeviceDomains,
     ) -> Result<String, DeviceInfoError> {
+        self.device.check_connected::<DeviceInfoError>()?;
         let values = self.get_values(domain)?;
 
         if let Some(key) = values.get(&key.to_string()) {
@@ -118,17 +120,18 @@ impl DeviceInfo<'_, SingleDevice> {
     }
 
     pub fn get_all_values(&self) -> Result<HashMap<String, String>, DeviceInfoError> {
+        self.device.check_connected::<DeviceInfoError>()?;
         self.get_values(DeviceDomains::All)
     }
 
-    pub fn get_product_type(&self) -> String {
+    pub fn get_product_type(&self) -> Result<String, DeviceInfoError> {
+        self.device.check_connected::<DeviceInfoError>()?;
         self.get_value(DeviceKeys::ProductType, DeviceDomains::All)
-            .expect("Couldn't get the product type, this is a bug")
     }
 
-    pub fn get_product_version(&self) -> String {
+    pub fn get_product_version(&self) -> Result<String, DeviceInfoError> {
+        self.device.check_connected::<DeviceInfoError>()?;
         self.get_value(DeviceKeys::ProductVersion, DeviceDomains::All)
-            .expect("Couldn't get the product version, this is a bug")
     }
 }
 impl DeviceInfo<'_, DeviceGroup> {
@@ -137,6 +140,7 @@ impl DeviceInfo<'_, DeviceGroup> {
         key: impl Into<String>,
         domain: DeviceDomains,
     ) -> Result<Vec<Plist>, DeviceInfoError> {
+        self.device.check_all_connected::<DeviceInfoError>()?;
         let lockdownds = self.device.get_lockdownd_clients::<DeviceInfoError>()?;
 
         let key = key.into();
@@ -153,6 +157,7 @@ impl DeviceInfo<'_, DeviceGroup> {
         &self,
         domain: DeviceDomains,
     ) -> Result<Vec<HashMap<String, String>>, DeviceInfoError> {
+        self.device.check_all_connected::<DeviceInfoError>()?;
         let mut dicts: Vec<HashMap<String, String>> = Vec::new();
 
         for plist in self.get_plist_all("", domain)?.into_iter() {
@@ -178,6 +183,7 @@ impl DeviceInfo<'_, DeviceGroup> {
         key: DeviceKeys,
         domain: DeviceDomains,
     ) -> Result<Vec<String>, DeviceInfoError> {
+        self.device.check_all_connected::<DeviceInfoError>()?;
         let values = self.get_values_all(domain)?;
 
         values
@@ -193,17 +199,18 @@ impl DeviceInfo<'_, DeviceGroup> {
     }
 
     pub fn get_all_values_all(&self) -> Result<Vec<HashMap<String, String>>, DeviceInfoError> {
+        self.device.check_all_connected::<DeviceInfoError>()?;
         self.get_values_all(DeviceDomains::All)
     }
 
-    pub fn get_product_type_all(&self) -> Vec<String> {
+    pub fn get_product_type_all(&self) -> Result<Vec<String>, DeviceInfoError> {
+        self.device.check_all_connected::<DeviceInfoError>()?;
         self.get_value_all(DeviceKeys::ProductType, DeviceDomains::All)
-            .expect("Couldn't get the product type, this is a bug")
     }
 
-    pub fn get_product_version_all(&self) -> Vec<String> {
+    pub fn get_product_version_all(&self) -> Result<Vec<String>, DeviceInfoError> {
+        self.device.check_all_connected::<DeviceInfoError>()?;
         self.get_value_all(DeviceKeys::ProductVersion, DeviceDomains::All)
-            .expect("Couldn't get the product version, this is a bug")
     }
 }
 

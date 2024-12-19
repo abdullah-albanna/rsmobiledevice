@@ -11,7 +11,7 @@ use crate::{device::DeviceClient, devices_collection::SingleDevice};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use rusty_libimobiledevice::service::ServiceClient;
 use std::fs;
-use std::fs::{File, OpenOptions};
+use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
@@ -123,11 +123,13 @@ impl DeviceSysLog<SingleDevice> {
     where
         F: Fn(LogsData) + 'static + Sync + Send,
     {
+        self.devices.check_connected::<DeviceSysLogError>()?;
         self.sender.send(LoggerCommand::StartLogging)?;
         self._start_service(callback);
         Ok(())
     }
     pub fn log_to_stdout(&self) -> Result<(), DeviceSysLogError> {
+        self.devices.check_connected::<DeviceSysLogError>()?;
         self.sender.send(LoggerCommand::StartLogging)?;
         self._start_service(|logs| println!("{}", logs.get_parsed_log_colored()));
         Ok(())
@@ -137,6 +139,7 @@ impl DeviceSysLog<SingleDevice> {
     where
         S: AsRef<Path> + ?Sized + Sync,
     {
+        self.devices.check_connected::<DeviceSysLogError>()?;
         self.sender.send(LoggerCommand::StartLogging)?;
         let file_path = file_path.as_ref().to_path_buf();
 
