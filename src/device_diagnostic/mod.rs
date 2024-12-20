@@ -99,18 +99,17 @@ impl DeviceDiagnostic<'_, SingleDevice> {
     }
     pub fn get_battery_plist(&self) -> Result<Plist, DeviceDiagnosticError> {
         self.device.check_connected::<DeviceDiagnosticError>()?;
-        let device = self.device.clone();
-        let product_version = device
+        let product_version = self
+            .device
             .get_device_info()
             .get_product_type()
             .map_err(|_| DeviceDiagnosticError::DeviceNotFound)?
             .strip_prefix("iPhone")
-            .unwrap_or("0,0")
-            .split(",")
-            .next()
-            .unwrap_or("0")
-            .parse::<u32>()
-            .unwrap_or(0);
+            .map_or(0, |s| {
+                s.split(",")
+                    .next()
+                    .map_or(0, |n| n.parse::<u32>().unwrap_or_default())
+            });
 
         if product_version <= 9 {
             // this only applies for iPhone 7 and older

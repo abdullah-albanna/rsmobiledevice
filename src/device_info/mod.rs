@@ -27,15 +27,12 @@ impl Display for DeviceInfo<'_, SingleDevice> {
             .get_plist("", DeviceDomains::All)
             .expect("Couldn't display device info");
 
-        for line in output.into_iter() {
-            text.push_str(
-                format!(
-                    "{}: {}\n",
-                    line.key.unwrap_or("unknown".into()),
-                    line.plist.get_display_value().unwrap_or("unknown".into())
-                )
-                .as_str(),
-            );
+        for line in output {
+            text.push_str(&format!(
+                "{}: {}\n",
+                line.key.unwrap_or("unknown".into()),
+                line.plist.get_display_value().unwrap_or("unknown".into())
+            ));
         }
 
         write!(f, "{}", text)
@@ -51,16 +48,13 @@ impl Display for DeviceInfo<'_, DeviceGroup> {
             .expect("Couldn't display device info");
 
         for (i, plist) in plists.into_iter().enumerate() {
-            text.push_str(format!("{}:\n", i + 1).as_str());
+            text.push_str(&format!("{}:\n", i + 1));
             for line in plist {
-                text.push_str(
-                    format!(
-                        "\t{}: {}\n",
-                        line.key.unwrap_or("unknown".into()),
-                        line.plist.get_display_value().unwrap_or("unknown".into())
-                    )
-                    .as_str(),
-                );
+                text.push_str(&format!(
+                    "\t{}: {}\n",
+                    line.key.unwrap_or("unknown".into()),
+                    line.plist.get_display_value().unwrap_or("unknown".into())
+                ));
             }
         }
 

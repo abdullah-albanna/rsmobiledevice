@@ -71,7 +71,7 @@ impl DeviceClient<SingleDevice> {
         self.check_connected()?;
         let device = self.get_device();
 
-        let lockdownd = LockdowndClient::new(device, "deviceclient-lockdownd-client")
+        let lockdownd = LockdowndClient::new(device, "rsmobiledevice-lockdownd-client")
             .map_err(|err| E::lockdownd_error(err))?;
         Ok(lockdownd)
     }
@@ -141,7 +141,7 @@ impl DeviceClient<DeviceGroup> {
         self.get_devices()
             .iter()
             .map(|device| {
-                LockdowndClient::new(device, "deviceclient-lockdownd-clients")
+                LockdowndClient::new(device, "rsmobiledevice-lockdownd-clients")
                     .map_err(E::lockdownd_error)
             })
             .collect()
@@ -179,36 +179,6 @@ impl DeviceClient<DeviceGroup> {
 impl TryFrom<String> for DeviceClient {
     type Error = DeviceClientError;
 
-    /// Attempts to create an `DeviceInfo` instance from a given UDID string.
-    ///
-    /// This implementation converts a UDID (Unique Device Identifier) represented as a `String`
-    /// into an `DeviceInfo` instance by retrieving the corresponding device using the `idevice` library.
-    ///
-    /// # Parameters
-    ///
-    /// - `value`: A `String` representing the UDID of the device.
-    ///
-    /// # Returns
-    ///
-    /// - `Ok(DeviceInfo)` if the device is successfully found and instantiated.
-    /// - `Err(IDeviceErrors)` if there is an error retrieving the device (e.g., device not found or connection error).
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the device corresponding to the provided UDID cannot be retrieved.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use crate::DeviceInfo;
-    /// use std::convert::TryFrom;
-    ///
-    /// let udid = "example-udid-string".to_string();
-    /// match DeviceInfo::try_from(udid) {
-    ///     Ok(device_info) => println!("Successfully created DeviceInfo: {:?}", device_info),
-    ///     Err(err) => println!("Error: {:?}", err),
-    /// }
-    /// ```
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let device = idevice::get_device(value)?;
         Ok(Self {
