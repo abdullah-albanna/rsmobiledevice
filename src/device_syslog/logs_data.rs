@@ -9,22 +9,22 @@ use regex::{Captures, Regex};
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LogsData<'a> {
     /// The date the log entry was created (e.g., "Dec 20 14:22:15")
-    pub(crate) date: &'a str,
+    pub date: &'a str,
 
     /// The device name or identifier that generated the log entry
-    pub(crate) device: &'a str,
+    pub device: &'a str,
 
     /// The process name that generated the log entry
-    pub(crate) process: &'a str,
+    pub process: &'a str,
 
     /// The process ID associated with the log entry, if available
-    pub(crate) pid: Option<&'a str>,
+    pub pid: Option<&'a str>,
 
     /// The severity level of the log entry (e.g., "error", "info"), if available
-    pub(crate) severity: Option<&'a str>,
+    pub severity: Option<&'a str>,
 
     /// The actual log message
-    pub(crate) message: &'a str,
+    pub message: &'a str,
 }
 
 impl<'a> LogsData<'a> {
