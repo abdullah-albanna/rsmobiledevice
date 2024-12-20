@@ -135,7 +135,7 @@ impl DeviceInstaller<'_, SingleDevice> {
             PackageType::Ipcc => {
                 package_options.dict_set_item("PackageType", "CarrierBundle".into())?;
                 installation_client.install(
-                    format!("/{}/{}", PKG_PATH, IPA_REMOTE_FILE),
+                    format!("/{}/{}", PKG_PATH, IPCC_REMOTE_FOLDER),
                     Some(package_options),
                 )?;
             }
