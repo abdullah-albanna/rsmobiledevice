@@ -3,11 +3,11 @@ use regex::{Captures, Regex};
 /// Struct to store parsed log data
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct LogsData<'a> {
-    date: &'a str,
-    device: &'a str,
+    pub(crate) date: &'a str,
+    pub(crate) device: &'a str,
     pub(crate) process: &'a str,
-    pid: Option<&'a str>,
-    severity: Option<&'a str>,
+    pub(crate) pid: Option<&'a str>,
+    pub(crate) severity: Option<&'a str>,
     pub(crate) message: &'a str,
 }
 

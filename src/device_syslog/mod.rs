@@ -4,6 +4,7 @@ pub mod filters;
 pub mod logs_data;
 
 pub use errors::DeviceSysLogError;
+use filters::FilterPart;
 pub use filters::{LogAction, LogFilter};
 pub use logs_data::LogsData;
 
@@ -15,7 +16,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
-use std::thread;
+use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 const DEVICE_SYSLOG_SERVICE: &str = "com.apple.syslog_relay";
@@ -33,6 +34,7 @@ pub struct DeviceSysLog<T> {
     sender: Sender<LoggerCommand>,
     receiver: Arc<Receiver<LoggerCommand>>,
     filter: Arc<LogFilter>,
+    filter_part: Arc<FilterPart>,
     _phantom: std::marker::PhantomData<T>,
 }
 
@@ -44,6 +46,7 @@ impl<T> DeviceSysLog<T> {
             sender: tx,
             receiver: Arc::new(rx),
             filter: Arc::new(LogFilter::Nothing),
+            filter_part: Arc::new(FilterPart::All),
             _phantom: std::marker::PhantomData::<T>,
         }
     }
@@ -54,6 +57,7 @@ impl<T> DeviceSysLog<T> {
             sender: tx,
             receiver: Arc::new(rx),
             filter: Arc::new(LogFilter::Nothing),
+            filter_part: Arc::new(FilterPart::All),
             _phantom: std::marker::PhantomData::<T>,
         }
     }
@@ -61,13 +65,14 @@ impl<T> DeviceSysLog<T> {
 
 impl DeviceSysLog<SingleDevice> {
     /// Starts the logger service on a new thread
-    fn _start_service<F>(&self, callback: F)
+    fn _start_service<F>(&self, callback: F) -> JoinHandle<()>
     where
         F: Fn(LogsData) + 'static + Sync + Send,
     {
         let devices_clone = Arc::clone(&self.devices);
         let receiver_clone = Arc::clone(&self.receiver);
         let filter_clone = Arc::clone(&self.filter);
+        let filter_part = Arc::clone(&self.filter_part);
 
         // Spawn a new thread to handle logging at the background
         thread::spawn(move || {
@@ -83,7 +88,7 @@ impl DeviceSysLog<SingleDevice> {
             let service = ServiceClient::new(device, lockdownd_service)
                 .expect("Could't create a service client for syslog");
 
-            loop {
+            'log: loop {
                 if let Ok(command) = receiver_clone.try_recv() {
                     current_status = command;
                 }
@@ -97,9 +102,9 @@ impl DeviceSysLog<SingleDevice> {
                                 let line = line.trim_matches('\0'); // Remove null characters
 
                                 let logs_data = LogsData::from(line);
-                                match filter_clone.apply(&logs_data) {
-                                    LogAction::Continue => continue,
-                                    LogAction::Break => break,
+                                match filter_clone.apply(&logs_data, &filter_part) {
+                                    LogAction::Continue => continue 'log,
+                                    LogAction::Break => break 'log,
                                     LogAction::Log => callback(logs_data),
                                 }
                             }
@@ -109,33 +114,32 @@ impl DeviceSysLog<SingleDevice> {
                             thread::sleep(Duration::from_secs(1));
                         }
                     },
-                    LoggerCommand::StopLogging => break,
+                    LoggerCommand::StopLogging => break 'log,
                 }
             }
-        });
+        })
     }
 
-    pub fn set_filter(&mut self, filter: LogFilter) {
+    pub fn set_filter(&mut self, filter: LogFilter, filter_part: FilterPart) {
         self.filter = filter.into();
+        self.filter_part = filter_part.into();
     }
 
-    pub fn log_to_custom<F>(&self, callback: F) -> Result<(), DeviceSysLogError>
+    pub fn log_to_custom<F>(&self, callback: F) -> Result<JoinHandle<()>, DeviceSysLogError>
     where
         F: Fn(LogsData) + 'static + Sync + Send,
     {
         self.devices.check_connected::<DeviceSysLogError>()?;
         self.sender.send(LoggerCommand::StartLogging)?;
-        self._start_service(callback);
-        Ok(())
+        Ok(self._start_service(callback))
     }
-    pub fn log_to_stdout(&self) -> Result<(), DeviceSysLogError> {
+    pub fn log_to_stdout(&self) -> Result<JoinHandle<()>, DeviceSysLogError> {
         self.devices.check_connected::<DeviceSysLogError>()?;
         self.sender.send(LoggerCommand::StartLogging)?;
-        self._start_service(|logs| println!("{}", logs.get_parsed_log_colored()));
-        Ok(())
+        Ok(self._start_service(|logs| println!("{}", logs.get_parsed_log_colored())))
     }
 
-    pub fn log_to_file<S>(&self, file_path: &S) -> Result<(), DeviceSysLogError>
+    pub fn log_to_file<S>(&self, file_path: &S) -> Result<JoinHandle<()>, DeviceSysLogError>
     where
         S: AsRef<Path> + ?Sized + Sync,
     {
@@ -143,7 +147,7 @@ impl DeviceSysLog<SingleDevice> {
         self.sender.send(LoggerCommand::StartLogging)?;
         let file_path = file_path.as_ref().to_path_buf();
 
-        self._start_service(move |logs| {
+        Ok(self._start_service(move |logs| {
             // resolved path, just in case
             let resolved_path = match fs::canonicalize(&file_path) {
                 Ok(path) => path,
@@ -175,8 +179,7 @@ impl DeviceSysLog<SingleDevice> {
             if let Err(e) = file.flush() {
                 eprintln!("Error flushing to file: {}", e);
             }
-        });
-        Ok(())
+        }))
     }
 
     pub fn stop_logging(&self) -> Result<(), DeviceSysLogError> {
