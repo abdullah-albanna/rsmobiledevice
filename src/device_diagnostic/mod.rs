@@ -33,6 +33,7 @@ impl<'a, T> DeviceDiagnostic<'a, T> {
         }
     }
 }
+
 impl DeviceDiagnostic<'_, SingleDevice> {
     fn _get_diagnostic_relay(&self) -> Result<DiagnosticsRelay, DeviceDiagnosticError> {
         let device = self.device.get_device();

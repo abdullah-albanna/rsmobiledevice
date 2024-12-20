@@ -2,8 +2,7 @@ use std::{
     collections::HashMap,
     ffi::OsStr,
     fmt::Display,
-    fs::{self, File},
-    io::{Read, Seek, SeekFrom},
+    io::{Cursor, Read, Seek, SeekFrom},
     marker::PhantomData,
     path::Path,
 };
@@ -57,23 +56,27 @@ impl DeviceInstaller<'_, SingleDevice> {
         S: AsRef<OsStr> + ?Sized,
     {
         self.device.check_connected::<DeviceInstallerError>()?;
-        let file = fs::File::open(Path::new(package_path.as_ref()))?;
+        let mut file = std::fs::File::open(Path::new(package_path.as_ref()))?;
+        let mut file_content = Vec::new();
+        file.read_to_end(&mut file_content).unwrap_or_default();
 
-        self._install_package(&file, options)
+        let mut cursor = Cursor::new(file_content);
+
+        self._install_package(&mut cursor, options)
     }
 
-    pub fn install_from_file_object(
+    pub fn install_from_reader<T: Read + Seek>(
         &self,
-        package_file: &File,
+        package_file: &mut T,
         options: Option<HashMap<&str, &str>>,
     ) -> Result<(), DeviceInstallerError> {
         self.device.check_connected::<DeviceInstallerError>()?;
         self._install_package(package_file, options)
     }
 
-    fn _install_package(
+    fn _install_package<T: Read + Seek>(
         &self,
-        file: &File,
+        file: &mut T,
         options: Option<HashMap<&str, &str>>,
     ) -> Result<(), DeviceInstallerError> {
         let device = self.device.get_device();
@@ -120,9 +123,9 @@ impl DeviceInstaller<'_, SingleDevice> {
         Ok(())
     }
 
-    fn determine_file_package_type(
+    fn determine_file_package_type<T: Read + Seek>(
         &self,
-        package: &File,
+        package: &mut T,
     ) -> Result<PackageType, DeviceInstallerError> {
         let mut archive = ZipArchive::new(package)?;
 
@@ -150,11 +153,11 @@ impl DeviceInstaller<'_, SingleDevice> {
         Ok(package_type)
     }
 
-    fn upload_package(
+    fn upload_package<T: Read + Seek>(
         &self,
         afc_client: &AfcClient<'_>,
         package_type: &PackageType,
-        package: &File,
+        package: &mut T,
     ) -> Result<(), DeviceInstallerError> {
         match package_type {
             PackageType::IPCC => {
@@ -171,10 +174,10 @@ impl DeviceInstaller<'_, SingleDevice> {
         Ok(())
     }
 
-    fn upload_ipa_package(
+    fn upload_ipa_package<T: Read + Seek>(
         &self,
         afc_client: &AfcClient<'_>,
-        mut ipa_file: &File,
+        ipa_file: &mut T,
     ) -> Result<(), DeviceInstallerError> {
         let remote_file_handler = afc_client.file_open(
             format!("/{}/{}", PKG_PATH, IPA_REMOTE_FILE),
@@ -193,11 +196,14 @@ impl DeviceInstaller<'_, SingleDevice> {
         Ok(())
     }
 
-    fn upload_ipcc_files(
+    fn upload_ipcc_files<T: Read + Seek>(
         &self,
         afc_client: &AfcClient<'_>,
-        ipcc_file: &File,
+        ipcc_file: &mut T,
     ) -> Result<(), DeviceInstallerError> {
+        // reset the cursor to the beginning for proper reading
+        ipcc_file.seek(SeekFrom::Start(0))?;
+
         let mut archive = ZipArchive::new(ipcc_file)?;
 
         for i in 0..archive.len() {
@@ -228,7 +234,7 @@ impl DeviceInstaller<'_, SingleDevice> {
 
         Ok(())
     }
-    fn get_bundle_id(&self, file: &File) -> Result<String, DeviceInstallerError> {
+    fn get_bundle_id<T: Read + Seek>(&self, file: &mut T) -> Result<String, DeviceInstallerError> {
         let mut zip_file = ZipArchive::new(file)?;
 
         let mut bundle_id = String::new();
