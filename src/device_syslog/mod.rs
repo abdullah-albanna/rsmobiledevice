@@ -1,3 +1,13 @@
+//! This module provides logging capabilities for iOS devices using the syslog service.
+//! It includes options for logging to the console, custom callbacks, or files, with
+//! filtering support for more controlled logging.
+//!
+//! ## Features
+//! - Logs in the background using threads
+//! - Start and stop logging from devices.
+//! - Filter logs based on specific criteria.
+//! - Output logs to custom destinations (stdout, files, or user-defined callbacks).
+
 pub mod constants;
 pub mod errors;
 pub mod filters;
@@ -21,13 +31,21 @@ use std::time::Duration;
 
 const DEVICE_SYSLOG_SERVICE: &str = "com.apple.syslog_relay";
 
-/// Enum for controlling logging behavior
+/// Enum for controlling logging behavior.
+///
+/// This enum defines commands to start or stop the logging process.
 #[derive(Debug, Clone)]
 pub enum LoggerCommand {
     StartLogging,
     StopLogging,
 }
 
+/// Struct for managing syslog data from a device or a group of devices.
+///
+/// `DeviceSysLog` is a high-level interface for interacting with the syslog service of iOS devices.
+///
+/// # Type Parameters
+/// - `T`: Determines whether the logger operates on a single device or a group of devices.
 #[derive(Debug)]
 pub struct DeviceSysLog<T> {
     devices: Arc<DeviceClient<T>>,
@@ -50,6 +68,10 @@ impl<T> DeviceSysLog<T> {
             _phantom: std::marker::PhantomData::<T>,
         }
     }
+
+    /// Creates a new `DeviceSysLog` instance from an `Arc` of `DeviceClient`.
+    ///
+    /// This is useful when creating multiple DeviceSysLog from a single client
     pub fn new_from_arc(devices: Arc<DeviceClient<T>>) -> DeviceSysLog<T> {
         let (tx, rx) = unbounded();
         DeviceSysLog {
@@ -64,7 +86,13 @@ impl<T> DeviceSysLog<T> {
 }
 
 impl DeviceSysLog<SingleDevice> {
-    /// Starts the logger service on a new thread
+    /// Internal method to start the logging service on a separate thread.
+    ///
+    /// # Parameters
+    /// - `callback`: A function to handle the `LogsData` objects received from the device.
+    ///
+    /// # Returns
+    /// A `JoinHandle` for the logging thread.
     fn _start_service<F>(&self, callback: F) -> JoinHandle<()>
     where
         F: Fn(LogsData) + 'static + Sync + Send,
@@ -74,19 +102,18 @@ impl DeviceSysLog<SingleDevice> {
         let filter_clone = Arc::clone(&self.filter);
         let filter_part = Arc::clone(&self.filter_part);
 
-        // Spawn a new thread to handle logging at the background
         thread::spawn(move || {
             let mut current_status: LoggerCommand = LoggerCommand::StopLogging;
 
             let device = devices_clone.get_device();
             let mut lockdownd = devices_clone
                 .get_lockdownd_client::<DeviceSysLogError>()
-                .expect("Could't get the device lockdown");
+                .expect("Couldn't get the device lockdown client");
             let lockdownd_service = lockdownd
                 .start_service(DEVICE_SYSLOG_SERVICE, true)
-                .expect("Could't start the syslog service");
+                .expect("Couldn't start the syslog service");
             let service = ServiceClient::new(device, lockdownd_service)
-                .expect("Could't create a service client for syslog");
+                .expect("Couldn't create a syslog service client");
 
             'log: loop {
                 if let Ok(command) = receiver_clone.try_recv() {
@@ -120,11 +147,22 @@ impl DeviceSysLog<SingleDevice> {
         })
     }
 
+    /// Sets the log filter for this `DeviceSysLog` instance.
+    ///
+    /// # Parameters
+    /// - `filter`: The filter logic to apply to logs.
+    /// - `filter_part`: Specifies which parts of the log to apply the filter on.
     pub fn set_filter(&mut self, filter: LogFilter, filter_part: FilterPart) {
         self.filter = filter.into();
         self.filter_part = filter_part.into();
     }
 
+    /// Logs to a custom destination using the provided callback function.
+    ///
+    /// This is a non blocking function
+    ///
+    /// # Parameters
+    /// - `callback`: A function to process the `LogsData`.
     pub fn log_to_custom<F>(&self, callback: F) -> Result<JoinHandle<()>, DeviceSysLogError>
     where
         F: Fn(LogsData) + 'static + Sync + Send,
@@ -133,12 +171,22 @@ impl DeviceSysLog<SingleDevice> {
         self.sender.send(LoggerCommand::StartLogging)?;
         Ok(self._start_service(callback))
     }
+
+    /// Logs to the console (stdout).
+    ///
+    /// This is a non blocking function
     pub fn log_to_stdout(&self) -> Result<JoinHandle<()>, DeviceSysLogError> {
         self.devices.check_connected::<DeviceSysLogError>()?;
         self.sender.send(LoggerCommand::StartLogging)?;
         Ok(self._start_service(|logs| println!("{}", logs.get_parsed_log_colored())))
     }
 
+    /// Logs to a specified file.
+    ///
+    /// This is a non blocking function
+    ///
+    /// # Parameters
+    /// - `file_path`: Path to the file where logs should be saved.
     pub fn log_to_file<S>(&self, file_path: &S) -> Result<JoinHandle<()>, DeviceSysLogError>
     where
         S: AsRef<Path> + ?Sized + Sync,
@@ -148,7 +196,6 @@ impl DeviceSysLog<SingleDevice> {
         let file_path = file_path.as_ref().to_path_buf();
 
         Ok(self._start_service(move |logs| {
-            // resolved path, just in case
             let resolved_path = match fs::canonicalize(&file_path) {
                 Ok(path) => path,
                 Err(_) => {

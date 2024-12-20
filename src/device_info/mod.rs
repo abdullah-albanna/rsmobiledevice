@@ -1,3 +1,9 @@
+//! Provides an interface for retrieving and displaying device information from iOS devices.
+//!
+//! ## Features
+//! - Retrieves plist data from a connected device or group of devices
+//! - Supports querying values based on device keys and domains
+
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::marker::PhantomData;
@@ -13,6 +19,11 @@ use errors::DeviceInfoError;
 use keys::DeviceKeys;
 use plist_plus::Plist;
 
+/// Struct for managing device information retrieval
+///
+/// # Type Parameters
+/// - `T`: The type of the device or device group (SingleDevice or DeviceGroup)
+///
 #[derive(Debug)]
 pub struct DeviceInfo<'a, T> {
     device: &'a DeviceClient<T>,
@@ -27,6 +38,7 @@ impl Display for DeviceInfo<'_, SingleDevice> {
             .get_plist("", DeviceDomains::All)
             .expect("Couldn't display device info");
 
+        // Format each line of the plist data
         for line in output {
             text.push_str(&format!(
                 "{}: {}\n",
@@ -47,6 +59,7 @@ impl Display for DeviceInfo<'_, DeviceGroup> {
             .get_plist_all("", DeviceDomains::All)
             .expect("Couldn't display device info");
 
+        // Iterate over all the devices and format their information
         for (i, plist) in plists.into_iter().enumerate() {
             text.push_str(&format!("{}:\n", i + 1));
             for line in plist {
@@ -61,7 +74,13 @@ impl Display for DeviceInfo<'_, DeviceGroup> {
         write!(f, "{}", text)
     }
 }
+
 impl DeviceInfo<'_, SingleDevice> {
+    /// Retrieves a plist from a single device.
+    ///
+    /// # Arguments
+    /// - `key`: The specific key to query.
+    /// - `domain`: The domain within which to search for the key.
     pub fn get_plist(
         &self,
         key: impl Into<String> + Copy,
@@ -77,6 +96,11 @@ impl DeviceInfo<'_, SingleDevice> {
         Ok(output)
     }
 
+    /// Retrieves multiple values from a device based on a domain.
+    ///
+    /// # Arguments
+    /// - `domain`: The domain within which to retrieve all values.
+    ///
     pub fn get_values(
         &self,
         domain: DeviceDomains,
@@ -86,6 +110,7 @@ impl DeviceInfo<'_, SingleDevice> {
 
         let output = self.get_plist("", domain)?;
 
+        // Populate the HashMap with device data
         for line in output {
             dict.insert(
                 line.key.unwrap_or("unknown".to_string()),
@@ -98,6 +123,11 @@ impl DeviceInfo<'_, SingleDevice> {
         Ok(dict)
     }
 
+    /// Retrieves a single value from a device based on a key and domain.
+    ///
+    /// # Arguments
+    /// - `key`: The key to query.
+    /// - `domain`: The domain within which to search for the key.
     pub fn get_value(
         &self,
         key: DeviceKeys,
@@ -113,6 +143,7 @@ impl DeviceInfo<'_, SingleDevice> {
         }
     }
 
+    /// Retrieves all the values from all the domains.
     pub fn get_all_values(&self) -> Result<HashMap<String, String>, DeviceInfoError> {
         self.device.check_connected::<DeviceInfoError>()?;
         self.get_values(DeviceDomains::All)
@@ -128,7 +159,13 @@ impl DeviceInfo<'_, SingleDevice> {
         self.get_value(DeviceKeys::ProductVersion, DeviceDomains::All)
     }
 }
+
 impl DeviceInfo<'_, DeviceGroup> {
+    /// Retrieves plist data for all devices in a group.
+    ///
+    /// # Arguments
+    /// - `key`: The specific key to query.
+    /// - `domain`: The domain within which to search for the key.
     pub fn get_plist_all(
         &self,
         key: impl Into<String>,
@@ -147,6 +184,10 @@ impl DeviceInfo<'_, DeviceGroup> {
         Ok(plists)
     }
 
+    /// Retrieves multiple values for all devices in a group based on a domain.
+    ///
+    /// # Arguments
+    /// - `domain`: The domain within which to retrieve all values.
     pub fn get_values_all(
         &self,
         domain: DeviceDomains,
@@ -172,6 +213,11 @@ impl DeviceInfo<'_, DeviceGroup> {
         Ok(dicts)
     }
 
+    /// Retrieves a specific value for all devices in a group based on a key and domain.
+    ///
+    /// # Arguments
+    /// - `key`: The key to query.
+    /// - `domain`: The domain within which to search for the key.
     pub fn get_value_all(
         &self,
         key: DeviceKeys,
@@ -185,23 +231,25 @@ impl DeviceInfo<'_, DeviceGroup> {
             .map(|value| {
                 value
                     .get(&key.to_string())
-                    .cloned() // this is needed to convert the value from
-                    // &String to String
+                    .cloned() // Convert from &String to String
                     .ok_or(DeviceInfoError::KeyNotFound)
             })
             .collect::<Result<Vec<_>, _>>()
     }
 
+    /// Retrieves all values for all devices in a group.
     pub fn get_all_values_all(&self) -> Result<Vec<HashMap<String, String>>, DeviceInfoError> {
         self.device.check_all_connected::<DeviceInfoError>()?;
         self.get_values_all(DeviceDomains::All)
     }
 
+    /// Retrieves the product type for all connected device.
     pub fn get_product_type_all(&self) -> Result<Vec<String>, DeviceInfoError> {
         self.device.check_all_connected::<DeviceInfoError>()?;
         self.get_value_all(DeviceKeys::ProductType, DeviceDomains::All)
     }
 
+    /// Retrieves the product version for all connected device.
     pub fn get_product_version_all(&self) -> Result<Vec<String>, DeviceInfoError> {
         self.device.check_all_connected::<DeviceInfoError>()?;
         self.get_value_all(DeviceKeys::ProductVersion, DeviceDomains::All)
