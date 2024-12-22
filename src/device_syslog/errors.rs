@@ -16,6 +16,9 @@ pub enum DeviceSysLogError {
 
     #[error("Device not found, make sure it's plugged")]
     DeviceNotFound,
+
+    #[error("The device logging didn't stop to the specified duration")]
+    Timeout,
 }
 
 impl LockdowndErrorTrait for DeviceSysLogError {
