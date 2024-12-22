@@ -12,10 +12,10 @@ pub mod constants;
 pub(crate) mod errors;
 pub mod filters;
 pub mod logs_data;
+pub use filters::{FilterPart, LogAction, LogFilter};
+pub use logs_data::LogsData;
 
 use errors::DeviceSysLogError;
-use filters::{FilterPart, LogAction, LogFilter};
-use logs_data::LogsData;
 
 use crate::{device::DeviceClient, devices_collection::SingleDevice};
 use crossbeam_channel::{unbounded, Receiver, Sender};
