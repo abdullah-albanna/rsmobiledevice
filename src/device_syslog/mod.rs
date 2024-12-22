@@ -9,25 +9,25 @@
 //! - Output logs to custom destinations (stdout, files, or user-defined callbacks).
 
 pub mod constants;
-pub mod errors;
+pub(crate) mod errors;
 pub mod filters;
 pub mod logs_data;
 
-pub use errors::DeviceSysLogError;
-use filters::FilterPart;
-pub use filters::{LogAction, LogFilter};
-pub use logs_data::LogsData;
+use errors::DeviceSysLogError;
+use filters::{FilterPart, LogAction, LogFilter};
+use logs_data::LogsData;
 
 use crate::{device::DeviceClient, devices_collection::SingleDevice};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use rusty_libimobiledevice::service::ServiceClient;
-use std::fs;
-use std::fs::OpenOptions;
-use std::io::Write;
-use std::path::Path;
-use std::sync::Arc;
-use std::thread::{self, JoinHandle};
-use std::time::Duration;
+use std::{
+    fs::{self, OpenOptions},
+    io::Write,
+    path::Path,
+    sync::Arc,
+    thread::{self, JoinHandle},
+    time::{Duration, Instant},
+};
 
 const DEVICE_SYSLOG_SERVICE: &str = "com.apple.syslog_relay";
 
@@ -116,7 +116,7 @@ impl DeviceSysLog<SingleDevice> {
                 .expect("Couldn't create a syslog service client");
 
             let track_timeout = !timeout_duration.is_zero();
-            let timeout_start = std::time::Instant::now();
+            let timeout_start = Instant::now();
 
             'log: loop {
                 if let Ok(command) = receiver_clone.try_recv() {

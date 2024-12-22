@@ -13,7 +13,7 @@ use rusty_libimobiledevice::services::{
 use std::marker::PhantomData;
 
 pub mod enums;
-pub mod errors;
+pub(crate) mod errors;
 
 const DIAGNOSTICS_RELAY_SERVICE: &str = "com.apple.mobile.diagnostics_relay";
 

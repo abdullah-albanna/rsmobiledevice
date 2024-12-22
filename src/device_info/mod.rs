@@ -4,16 +4,16 @@
 //! - Retrieves plist data from a connected device or group of devices
 //! - Supports querying values based on device keys and domains
 
-use std::collections::HashMap;
-use std::fmt::Display;
-use std::marker::PhantomData;
+use std::{collections::HashMap, fmt::Display, marker::PhantomData};
 
 pub mod domains;
-pub mod errors;
+pub(crate) mod errors;
 pub mod keys;
 
-use crate::device::DeviceClient;
-use crate::devices_collection::{DeviceGroup, SingleDevice};
+use crate::{
+    device::DeviceClient,
+    devices_collection::{DeviceGroup, SingleDevice},
+};
 use domains::DeviceDomains;
 use errors::DeviceInfoError;
 use keys::DeviceKeys;

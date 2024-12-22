@@ -1,10 +1,10 @@
 use rusty_libimobiledevice::error::{AfcError, IdeviceError, LockdowndError};
 use thiserror::Error;
 
-pub use crate::device_diagnostic::errors::DeviceDiagnosticError;
-pub use crate::device_info::errors::DeviceInfoError;
-pub use crate::device_installer::errors::DeviceInstallerError;
-pub use crate::device_syslog::errors::DeviceSysLogError;
+pub use crate::{
+    device_diagnostic::errors::DeviceDiagnosticError, device_info::errors::DeviceInfoError,
+    device_installer::errors::DeviceInstallerError, device_syslog::errors::DeviceSysLogError,
+};
 
 pub trait DeviceNotFoundErrorTrait {
     fn device_not_found() -> Self;

@@ -24,7 +24,7 @@ use rusty_libimobiledevice::services::{
 };
 use zip::ZipArchive;
 
-pub mod errors;
+pub(crate) mod errors;
 
 use crate::{device::DeviceClient, devices_collection::SingleDevice, errors::DeviceInstallerError};
 
