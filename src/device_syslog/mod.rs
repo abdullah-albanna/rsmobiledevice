@@ -146,7 +146,10 @@ impl DeviceSysLog<SingleDevice> {
                                 let logs_data = LogsData::from(line);
                                 match filter_clone.apply(&logs_data, &filter_part) {
                                     LogAction::Continue => continue 'log,
-                                    LogAction::Break => break 'log,
+                                    LogAction::Break => {
+                                        callback(logs_data);
+                                        break 'log;
+                                    }
                                     LogAction::Log => callback(logs_data),
                                 }
                             }
