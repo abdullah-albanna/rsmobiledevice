@@ -12,6 +12,7 @@ use std::collections::HashSet;
 /// - **Untrigger**: Matches a regular expression, if it was found, it stop the logging
 /// - **Process**: Filters logs based on the process name.
 /// - **Exclude**: Filters logs by excluding certain processes.
+/// - **OneShot**: Doesn't log anything up until it finds the pattern then it stops
 /// - **Quiet**: Filters out noisy process defined by `libimobiledevice` list.
 /// - **KernelOnly**: Used to only log the kernel.
 /// - **NoKernel**: Used to log everything but kernel
@@ -23,6 +24,7 @@ pub enum LogFilter {
     Untrigger(Regex),
     Process(HashSet<String>),
     Exclude(HashSet<String>),
+    OneShot(Regex),
     Quiet,
     KernelOnly,
     NoKernel,
@@ -147,6 +149,14 @@ impl LogFilter {
                         }
                     }
                     LogAction::Log
+                }
+                LogFilter::OneShot(pattern) => {
+                    for part in parts.iter().flatten() {
+                        if pattern.is_match(part) {
+                            return LogAction::Break;
+                        }
+                    }
+                    LogAction::Continue
                 }
                 LogFilter::Quiet => {
                     for part in parts.iter().flatten() {

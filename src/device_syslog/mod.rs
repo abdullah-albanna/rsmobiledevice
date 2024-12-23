@@ -93,9 +93,15 @@ impl DeviceSysLog<SingleDevice> {
     /// - `timeout_duration`: The timeout duration for the logging process.
     ///
 
-    fn _start_service<F>(&self, callback: F, timeout_duration: Duration) -> JoinHandle<()>
+    fn _start_service<F, F2>(
+        &self,
+        callback: F,
+        timeout_duration: Duration,
+        timeout_callback: F2,
+    ) -> JoinHandle<()>
     where
         F: Fn(LogsData) + 'static + Sync + Send,
+        F2: Fn() + 'static + Sync + Send,
     {
         let devices_clone = Arc::clone(&self.devices);
         let receiver_clone = Arc::clone(&self.receiver);
@@ -125,6 +131,7 @@ impl DeviceSysLog<SingleDevice> {
 
                 if track_timeout && timeout_start.elapsed() >= timeout_duration {
                     eprintln!("Logging timeout reached.");
+                    timeout_callback();
                     break;
                 }
 
@@ -176,7 +183,7 @@ impl DeviceSysLog<SingleDevice> {
     {
         self.devices.check_connected::<DeviceSysLogError>()?;
         self.sender.send(LoggerCommand::StartLogging)?;
-        Ok(self._start_service(callback, Duration::from_secs(0)))
+        Ok(self._start_service(callback, Duration::from_secs(0), || {}))
     }
 
     /// Logs to a custom destination with a timeout using the provided callback function.
@@ -196,7 +203,30 @@ impl DeviceSysLog<SingleDevice> {
     {
         self.devices.check_connected::<DeviceSysLogError>()?;
         self.sender.send(LoggerCommand::StartLogging)?;
-        Ok(self._start_service(callback, timeout_duration))
+        Ok(self._start_service(callback, timeout_duration, || {}))
+    }
+
+    /// Logs to a custom destination with a timeout using the provided callback function.
+    ///
+    /// This is a non blocking function
+    ///
+    /// # Parameters
+    /// - `callback`: A function to process the `LogsData`.
+    /// - `timeout_duration`: The timeout duration for the logging process.
+    /// - `timeout_callback`: A function that will be called once the timeout is triggred
+    pub fn log_to_custom_with_timeout_or_else<F, F2>(
+        &self,
+        callback: F,
+        timeout_duration: Duration,
+        timeout_callback: F2,
+    ) -> Result<JoinHandle<()>, DeviceSysLogError>
+    where
+        F: Fn(LogsData) + 'static + Sync + Send,
+        F2: Fn() + 'static + Sync + Send,
+    {
+        self.devices.check_connected::<DeviceSysLogError>()?;
+        self.sender.send(LoggerCommand::StartLogging)?;
+        Ok(self._start_service(callback, timeout_duration, timeout_callback))
     }
 
     /// Logs to the console (stdout).
@@ -208,6 +238,7 @@ impl DeviceSysLog<SingleDevice> {
         Ok(self._start_service(
             |logs| println!("{}", logs.get_parsed_log_colored()),
             Duration::from_secs(0),
+            || {},
         ))
     }
 
@@ -226,6 +257,32 @@ impl DeviceSysLog<SingleDevice> {
         Ok(self._start_service(
             |logs| println!("{}", logs.get_parsed_log_colored()),
             timeout_duration,
+            || {},
+        ))
+    }
+
+    /// Logs to the console (stdout) with a timeout.
+    /// The timeout_callback will be called once the timeout is triggred
+    ///
+    /// This is a non blocking function
+    ///
+    /// #Parameters
+    /// - `timeout_duration`: The timeout duration for the logging process.
+    /// - `timeout_callback`: A function that will be called once the timeout is triggred
+    pub fn log_to_stdout_with_timeout_or_else<F>(
+        &self,
+        timeout_duration: Duration,
+        timeout_callback: F,
+    ) -> Result<JoinHandle<()>, DeviceSysLogError>
+    where
+        F: Fn() + Send + Sync + 'static,
+    {
+        self.devices.check_connected::<DeviceSysLogError>()?;
+        self.sender.send(LoggerCommand::StartLogging)?;
+        Ok(self._start_service(
+            |logs| println!("{}", logs.get_parsed_log_colored()),
+            timeout_duration,
+            timeout_callback,
         ))
     }
 
@@ -277,6 +334,7 @@ impl DeviceSysLog<SingleDevice> {
                 }
             },
             Duration::from_secs(0),
+            || {},
         ))
     }
 
@@ -333,6 +391,68 @@ impl DeviceSysLog<SingleDevice> {
                 }
             },
             timeout_duration,
+            || {},
+        ))
+    }
+
+    /// Logs to a specified file with timeout.
+    /// The timeout_callback will be called once the timeout is triggred
+    ///
+    /// This is a non blocking function
+    ///
+    /// # Parameters
+    /// - `file_path`: Path to the file where logs should be saved.
+    /// - `timeout_duration`: The timeout duration for the logging process.
+    /// - `timeout_callback`: A function that will be called once the timeout is triggred
+    pub fn log_to_file_with_timeout_or_else<S, F>(
+        &self,
+        file_path: &S,
+        timeout_duration: Duration,
+        timeout_callback: F,
+    ) -> Result<JoinHandle<()>, DeviceSysLogError>
+    where
+        S: AsRef<Path> + ?Sized + Sync,
+        F: Fn() + Send + Sync + 'static,
+    {
+        self.devices.check_connected::<DeviceSysLogError>()?;
+        self.sender.send(LoggerCommand::StartLogging)?;
+        let file_path = file_path.as_ref().to_path_buf();
+
+        Ok(self._start_service(
+            move |logs| {
+                let resolved_path = match fs::canonicalize(&file_path) {
+                    Ok(path) => path,
+                    Err(_) => {
+                        eprintln!("Failed to resolve file path: {}", file_path.display());
+                        file_path.to_owned()
+                    }
+                };
+                let mut file = match OpenOptions::new()
+                    .append(true)
+                    .create(true)
+                    .open(&resolved_path)
+                {
+                    Ok(file) => file,
+                    Err(e) => {
+                        eprintln!(
+                            "Critical error: Failed to open log file at {:?}: {}",
+                            resolved_path, e
+                        );
+                        return;
+                    }
+                };
+
+                if let Err(e) = file.write_all(logs.get_parsed_log().as_bytes()) {
+                    eprintln!("Error writing to file: {}", e);
+                    return;
+                }
+
+                if let Err(e) = file.flush() {
+                    eprintln!("Error flushing to file: {}", e);
+                }
+            },
+            timeout_duration,
+            timeout_callback,
         ))
     }
 
