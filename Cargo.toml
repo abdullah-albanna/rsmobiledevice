@@ -2,16 +2,22 @@
 name = "rsmobiledevice"
 version = "0.1.0"
 edition = "2021"
-authors = ["Abdullah Al-Banna"]
+license = "MIT"
+authors = ["Abdullah Albanna <abdu.albanna@proton.me>"]
 description = "A high-level, user-friendly wrapper for rusty_libimobiledevice, simplifying interaction with iOS devices in Rust."
-homepage = "https://github.com/Abdullah-Albanna/rsmobiledevice"
-repository = "https://github.com/Abdullah-Albanna/rsmobiledevice"
+homepage = "https://github.com/abdullah-albanna/rsmobiledevice"
+repository = "https://github.com/abdullah-albanna/rsmobiledevice"
+documentation = "https://docs.rs/rsmobiledevice"
+readme = "README.md"
 keywords = ["libimobiledevice", "ios", "lockdown", "ipa", "ipcc", "mobiledevice"]
 
+[lib]
+name = "rsmobiledevice"
+
 [dependencies]
-crossbeam-channel = "0.5.13"
+crossbeam-channel = "0.5"
 plist_plus = "0.2.6"
-regex = "1.11.1"
-rusty_libimobiledevice = { git = "https://github.com/Abdullah-Albanna/modified_rusty_libimobiledevice", rev = "406f210" }
-thiserror = "2.0.3"
-zip = "2.2.1"
+regex = "1"
+rusty_libimobiledevice = { git = "https://github.com/Abdullah-Albanna/modified_rusty_libimobiledevice", rev = "eb73d54d" }
+thiserror = "2"
+zip = "2"

@@ -7,10 +7,11 @@
 //! You must create one to get anything else
 
 use rusty_libimobiledevice::{
-    idevice,
+    callback::IDeviceEventCallback,
+    idevice::{self, EventType},
     services::{afc::AfcClient, lockdownd::LockdowndClient},
 };
-use std::marker::PhantomData;
+use std::{any::Any, marker::PhantomData};
 
 use crate::{
     device_diagnostic::DeviceDiagnostic,
@@ -22,6 +23,42 @@ use crate::{
         AFCClientErrorTrait, DeviceClientError, DeviceNotFoundErrorTrait, LockdowndErrorTrait,
     },
 };
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Event {
+    Connect,
+    Disconnect,
+    Pair,
+}
+
+impl From<EventType> for Event {
+    fn from(value: EventType) -> Self {
+        match value {
+            EventType::Add => Self::Connect,
+            EventType::Remove => Self::Disconnect,
+            EventType::Pair => Self::Pair,
+        }
+    }
+}
+
+pub fn event_subscribe<F>(mut cb: F) -> Result<(), DeviceClientError>
+where
+    F: FnMut(Event) + Send + Sync + 'static,
+{
+    Ok(rusty_libimobiledevice::idevice::event_subscribe(
+        IDeviceEventCallback::new(
+            Box::new(move |event, _| {
+                cb(event.event_type().into());
+            }),
+            Box::new(0),
+            None,
+        ),
+    )?)
+}
+
+pub fn event_unsubscribe() -> Result<(), DeviceClientError> {
+    Ok(rusty_libimobiledevice::idevice::event_unsubscribe()?)
+}
 
 /// A high-level abstraction for managing iOS devices, generic over `T`.
 ///
@@ -122,6 +159,22 @@ impl DeviceClient<SingleDevice> {
         connected_devices
             .iter()
             .any(|d| d.get_udid() == device.get_udid())
+    }
+
+    pub fn watch_device<F>(&self, mut cb: F) -> Result<(), DeviceClientError>
+    where
+        F: FnMut(Event) + Send + Sync + 'static,
+    {
+        rusty_libimobiledevice::idevice::event_subscribe(IDeviceEventCallback::new(
+            Box::new(move |event, _| {
+                let event = event.event_type().into();
+                cb(event);
+            }),
+            Box::new(0),
+            Some(self.device.get_device().unwrap().get_udid()),
+        ))?;
+
+        Ok(())
     }
 }
 
