@@ -217,9 +217,9 @@ impl DeviceInstaller<'_, SingleDevice> {
                     // we would only stop if there is a key named `Error`
                     // or the `PercentComplete` is `100`
                     // or the `Status` is `Complete` ( for ipcc packages )
-                    let condition = status.rfind("Error").is_some()
+                    let condition = status.rfind("Status").is_some_and(|s| &s == "Complete")
                         || status.rfind("PercentComplete").is_some_and(|n| &n == "100")
-                        || status.rfind("Status").is_some_and(|s| &s == "Complete");
+                        || status.rfind("Error").is_some();
 
                     if condition {
                         completed_clone.store(true, Ordering::SeqCst);
@@ -342,6 +342,7 @@ impl DeviceInstaller<'_, SingleDevice> {
                     afc_client.file_open(current_file_path, AfcFileMode::WriteOnly)?;
 
                 afc_client.file_write(remote_file_handler, inside_file_bytes)?;
+                afc_client.file_close(remote_file_handler)?;
             }
         }
 
