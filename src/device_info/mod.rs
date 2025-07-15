@@ -32,46 +32,39 @@ pub struct DeviceInfo<'a, T> {
 
 impl Display for DeviceInfo<'_, SingleDevice> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut text = String::new();
-
         let output = self
             .get_plist("", DeviceDomains::All)
-            .expect("Couldn't display device info");
+            .map_err(|_| std::fmt::Error)?;
 
         // Format each line of the plist data
         for line in output {
-            text.push_str(&format!(
-                "{}: {}\n",
-                line.key.unwrap_or("unknown".into()),
-                line.plist.get_display_value().unwrap_or("unknown".into())
-            ));
+            let key = line.key.unwrap_or("unknown".into());
+            let value = line.plist.get_display_value().unwrap_or("unknown".into());
+
+            writeln!(f, "{key}: {value}")?;
         }
 
-        write!(f, "{}", text)
+        Ok(())
     }
 }
 
 impl Display for DeviceInfo<'_, DeviceGroup> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut text = String::new();
-
         let plists = self
             .get_plist_all("", DeviceDomains::All)
-            .expect("Couldn't display device info");
+            .map_err(|_| std::fmt::Error)?;
 
         // Iterate over all the devices and format their information
         for (i, plist) in plists.into_iter().enumerate() {
-            text.push_str(&format!("{}:\n", i + 1));
+            writeln!(f, "{}:", i + 1)?;
             for line in plist {
-                text.push_str(&format!(
-                    "\t{}: {}\n",
-                    line.key.unwrap_or("unknown".into()),
-                    line.plist.get_display_value().unwrap_or("unknown".into())
-                ));
+                let key = line.key.unwrap_or("unknown".into());
+                let value = line.plist.get_display_value().unwrap_or("unknown".into());
+                writeln!(f, "\t{key}: {value}")?;
             }
         }
 
-        write!(f, "{}", text)
+        Ok(())
     }
 }
 
