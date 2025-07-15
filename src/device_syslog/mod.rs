@@ -109,7 +109,7 @@ impl DeviceSysLog<SingleDevice> {
 
             let device = devices_clone.get_device();
             let mut lockdownd = devices_clone
-                .get_lockdownd_client::<DeviceSysLogError>()
+                .get_dynamic_lockdownd_client::<DeviceSysLogError>()
                 .expect("Couldn't get the device lockdown client");
             let lockdownd_service = lockdownd
                 .start_service(DEVICE_SYSLOG_SERVICE, true)

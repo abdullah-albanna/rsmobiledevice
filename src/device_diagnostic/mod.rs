@@ -53,7 +53,7 @@ impl DeviceDiagnostic<'_, SingleDevice> {
         let device = self.device.get_device();
         let mut lockdownd = self
             .device
-            .get_lockdownd_client::<DeviceDiagnosticError>()?;
+            .get_dynamic_lockdownd_client::<DeviceDiagnosticError>()?;
         let diagnostic_service = lockdownd
             .start_service(DIAGNOSTICS_RELAY_SERVICE, true)
             .map_err(|e| DeviceDiagnosticError::ServiceError(e.to_string()))?;

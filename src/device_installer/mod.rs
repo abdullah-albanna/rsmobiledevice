@@ -172,7 +172,7 @@ impl DeviceInstaller<'_, SingleDevice> {
         callback: Option<Box<dyn Fn(CommandPlist, StatusPlist) + Send + Sync>>,
     ) -> Result<(), DeviceInstallerError> {
         let device = self.device.get_device();
-        let afc_client = self.device.get_afc_client::<DeviceInstallerError>()?;
+        let afc_client = self.device.get_dynamic_afc_client::<DeviceInstallerError>()?;
 
         self.check_or_create_path(&afc_client, PKG_PATH)?;
 

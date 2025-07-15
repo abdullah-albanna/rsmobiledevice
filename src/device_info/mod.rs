@@ -81,7 +81,7 @@ impl DeviceInfo<'_, SingleDevice> {
     ) -> Result<Plist, DeviceInfoError> {
         self.device.check_connected::<DeviceInfoError>()?;
 
-        let lockdownd = self.device.get_lockdownd_client::<DeviceInfoError>()?;
+        let lockdownd = self.device.get_dynamic_lockdownd_client::<DeviceInfoError>()?;
         let output = lockdownd
             .get_value(key.into(), domain.as_string())
             .map_err(DeviceInfoError::LockdowndError)?;

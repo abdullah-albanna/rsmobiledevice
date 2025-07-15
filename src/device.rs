@@ -111,7 +111,7 @@ impl DeviceClient<SingleDevice> {
     ///
     /// # Errors
     /// Returns an error if the device is not connected or if the AFC service fails to start.
-    pub fn get_afc_client<E: AFCClientErrorTrait + DeviceNotFoundErrorTrait>(
+    pub(crate) fn get_dynamic_afc_client<E: AFCClientErrorTrait + DeviceNotFoundErrorTrait>(
         &self,
     ) -> Result<AfcClient, E> {
         self.check_connected()?;
@@ -123,7 +123,9 @@ impl DeviceClient<SingleDevice> {
     ///
     /// # Errors
     /// Returns an error if the device is not connected or if the lockdownd service fails.
-    pub fn get_lockdownd_client<E: LockdowndErrorTrait + DeviceNotFoundErrorTrait>(
+    pub(crate) fn get_dynamic_lockdownd_client<
+        E: LockdowndErrorTrait + DeviceNotFoundErrorTrait,
+    >(
         &self,
     ) -> Result<LockdowndClient, E> {
         self.check_connected()?;
