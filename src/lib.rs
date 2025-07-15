@@ -20,6 +20,7 @@
 use plist_plus::{Plist, PlistType};
 
 pub mod device;
+pub mod device_afcclient;
 pub mod device_diagnostic;
 pub mod device_info;
 pub mod device_installer;
