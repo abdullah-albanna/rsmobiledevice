@@ -1,10 +1,3 @@
-// "st_blocks": "0",
-// "st_mtime": "1744979741182311670",
-// "st_ifmt": "S_IFDIR",
-// "st_birthtime": "1729274422233349877",
-// "st_nlink": "2",
-// "st_size": "19136",
-
 use std::{
     collections::HashMap,
     str::FromStr,
@@ -29,7 +22,21 @@ pub enum FileType {
     Unknown,
 }
 
-//['S_IFDIR', 'S_IFCHR', 'S_IFBLK', 'S_IFREG', 'S_IFIFO', 'S_IFLNK', 'S_IFSOCK']
+impl std::fmt::Display for FileType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::File => write!(f, "file"),
+            Self::Directory => write!(f, "directory"),
+            Self::Symlink => write!(f, "symlink"),
+
+            Self::CharDevice => write!(f, "character device"),
+            Self::BlockDevice => write!(f, "block device"),
+            Self::NamedPipe => write!(f, "named pipe(fifo)"),
+            Self::Socket => write!(f, "socket"),
+            Self::Unknown => write!(f, "unknown"),
+        }
+    }
+}
 
 impl From<String> for FileType {
     fn from(value: String) -> Self {
@@ -45,6 +52,16 @@ impl From<String> for FileType {
 
             _ => Self::Unknown,
         }
+    }
+}
+
+impl FileInfo {
+    pub fn is_dir(&self) -> bool {
+        matches!(self.st_ifmt, FileType::Directory)
+    }
+
+    pub fn is_file(&self) -> bool {
+        matches!(self.st_ifmt, FileType::File)
     }
 }
 

@@ -11,12 +11,6 @@ pub enum DeviceAfcClientError {
     #[error("Device not found, make sure it's plugged")]
     DeviceNotFound,
 
-    #[error("the path is not a file")]
-    NonFile,
-
-    #[error("the path is not a directory")]
-    NonDir,
-
     #[error("the path aready exists")]
     AlreadyExists,
 
@@ -25,6 +19,16 @@ pub enum DeviceAfcClientError {
 
     #[error("the path `{0}` does not exists")]
     PathNotFound(String),
+
+    #[error("invalid open option")]
+    InvalidOpenOption,
+
+    #[error("wrong kind of path, path: {path}\nexpected: {expected}\nfound: {found}")]
+    WrongKind {
+        path: String,
+        expected: FileType,
+        found: FileType,
+    },
 }
 
 impl AfcClientErrorTrait for DeviceAfcClientError {
