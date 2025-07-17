@@ -2,7 +2,7 @@ use plist_plus::error::PlistError;
 use rusty_libimobiledevice::error::{AfcError, InstProxyError};
 use thiserror::Error;
 
-use crate::errors::{AFCClientErrorTrait, DeviceNotFoundErrorTrait};
+use crate::errors::{AfcClientErrorTrait, DeviceNotFoundErrorTrait};
 
 #[derive(Debug, Error)]
 pub enum DeviceInstallerError {
@@ -31,7 +31,7 @@ pub enum DeviceInstallerError {
     DeviceNotFound,
 }
 
-impl AFCClientErrorTrait for DeviceInstallerError {
+impl AfcClientErrorTrait for DeviceInstallerError {
     fn afcclient_error(error: AfcError) -> Self {
         Self::AfcClientError(error)
     }

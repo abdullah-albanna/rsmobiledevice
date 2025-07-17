@@ -20,7 +20,7 @@ use crate::{
     device_syslog::DeviceSysLog,
     devices_collection::{DeviceGroup, Devices, SingleDevice},
     errors::{
-        AFCClientErrorTrait, DeviceClientError, DeviceNotFoundErrorTrait, LockdowndErrorTrait,
+        AfcClientErrorTrait, DeviceClientError, DeviceNotFoundErrorTrait, LockdowndErrorTrait,
     },
 };
 
@@ -111,7 +111,7 @@ impl DeviceClient<SingleDevice> {
     ///
     /// # Errors
     /// Returns an error if the device is not connected or if the AFC service fails to start.
-    pub(crate) fn get_dynamic_afc_client<E: AFCClientErrorTrait + DeviceNotFoundErrorTrait>(
+    pub(crate) fn get_dynamic_afc_client<E: AfcClientErrorTrait + DeviceNotFoundErrorTrait>(
         &self,
     ) -> Result<AfcClient, E> {
         self.check_connected()?;
@@ -200,7 +200,7 @@ impl DeviceClient<DeviceGroup> {
     ///
     /// # Errors
     /// Returns an error if any device is not connected or if the AFC service fails for a device.
-    pub fn get_afc_clients<E: AFCClientErrorTrait + DeviceNotFoundErrorTrait>(
+    pub fn get_afc_clients<E: AfcClientErrorTrait + DeviceNotFoundErrorTrait>(
         &self,
     ) -> Result<Vec<AfcClient>, E> {
         self.check_all_connected()?;

@@ -15,6 +15,7 @@ keywords = ["libimobiledevice", "ios", "lockdown", "ipa", "ipcc", "mobiledevice"
 name = "rsmobiledevice"
 
 [dependencies]
+chrono = "0.4.41"
 crossbeam-channel = "0.5"
 plist_plus = "0.2.6"
 regex = "1"
