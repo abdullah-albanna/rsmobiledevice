@@ -5,7 +5,7 @@ mod models;
 use models::{pathinfo::FileType, FSTree, FileInfo};
 
 use errors::DeviceAfcClientError;
-use rusty_libimobiledevice::services::afc;
+use rusty_libimobiledevice::services::afc::{self, AfcFileMode};
 
 use crate::{device::DeviceClient, devices_collection::SingleDevice};
 
@@ -108,21 +108,71 @@ impl DeviceAfcClient<'_, SingleDevice> {
     }
 
     pub fn is_directory(&self, path: &str) -> Result<bool, DeviceAfcClientError> {
+        if !self.path_exists(path)? {
+            return Err(DeviceAfcClientError::PathNotFound(path.into()));
+        }
+
         let file_info = self.get_path_info(path)?;
 
         Ok(matches!(file_info.st_ifmt, FileType::Directory))
     }
 
     pub fn read_file(&self, path: &str) -> Result<Vec<u8>, DeviceAfcClientError> {
-        todo!()
+        if !self.path_exists(path)? {
+            return Err(DeviceAfcClientError::PathNotFound(path.into()));
+        }
+
+        if !matches!(self.get_path_info(path)?.st_ifmt, FileType::File) {
+            return Err(DeviceAfcClientError::NonFile);
+        }
+
+        let file_info = self.get_path_info(path)?;
+
+        let afcclient = self
+            .device
+            .get_dynamic_afc_client::<DeviceAfcClientError>()?;
+
+        let handle = afcclient.file_open(path, AfcFileMode::ReadOnly)?;
+        Ok(afcclient.file_read(handle, file_info.st_size as _)?)
     }
 
-    pub fn write_file(&self, path: &str, contents: &[u8]) -> Result<(), DeviceAfcClientError> {
-        todo!()
+    pub fn write_file(
+        &self,
+        path: &str,
+        contents: impl Into<Vec<u8>>,
+    ) -> Result<(), DeviceAfcClientError> {
+        if self.path_exists(path)? {
+            return Err(DeviceAfcClientError::AlreadyExists);
+        }
+
+        let afcclient = self
+            .device
+            .get_dynamic_afc_client::<DeviceAfcClientError>()?;
+
+        let handle = afcclient.file_open(path, AfcFileMode::WriteOnly)?;
+
+        Ok(afcclient.file_write(handle, contents.into())?)
     }
 
-    pub fn append_file(&self, path: &str, contents: &[u8]) -> Result<(), DeviceAfcClientError> {
-        todo!()
+    pub fn append_file(
+        &self,
+        path: &str,
+        contents: impl Into<Vec<u8>>,
+    ) -> Result<(), DeviceAfcClientError> {
+        if !self.path_exists(path)? {
+            return Err(DeviceAfcClientError::PathNotFound(path.into()));
+        }
+
+        if !matches!(self.get_path_info(path)?.st_ifmt, FileType::File) {
+            return Err(DeviceAfcClientError::NonFile);
+        }
+
+        let afcclient = self
+            .device
+            .get_dynamic_afc_client::<DeviceAfcClientError>()?;
+
+        let handle = afcclient.file_open(path, AfcFileMode::Append)?;
+        Ok(afcclient.file_write(handle, contents.into())?)
     }
 
     pub fn copy_file_recursive(&self, src: &str, dst: &str) -> Result<(), DeviceAfcClientError> {
